@@ -935,69 +935,6 @@ st.markdown("""
             border-radius: 18px !important;
         }
 
-        /* HAMBURGER MOBILE PERSONNALISÉ — indépendant du bouton natif Streamlit */
-        div[data-testid="stButton"]:has(button[kind="secondary"]) {
-            position: relative;
-        }
-        div[data-testid="stButton"]:has(button) {
-            position: fixed !important;
-            left: 10px !important;
-            top: 10px !important;
-            z-index: 1000000 !important;
-            width: 48px !important;
-            height: 48px !important;
-        }
-        button:has(p) {
-            width: 48px !important;
-            height: 48px !important;
-            min-width: 48px !important;
-            min-height: 48px !important;
-            padding: 0 !important;
-            border-radius: 14px !important;
-            border: 1px solid rgba(0,229,212,.65) !important;
-            background: rgba(7,22,32,.98) !important;
-            box-shadow: 0 7px 24px rgba(0,0,0,.38) !important;
-            color: #00E5D4 !important;
-        }
-        button:has(p) p {
-            font-size: 0 !important;
-        }
-        button:has(p) p::after {
-            content: "☰" !important;
-            font-size: 25px !important;
-            line-height: 1 !important;
-        }
-        .mobile-menu-panel {
-            position: fixed !important;
-            left: 8px !important;
-            top: 66px !important;
-            width: min(310px, calc(100vw - 16px)) !important;
-            max-height: calc(100vh - 82px) !important;
-            overflow-y: auto !important;
-            z-index: 999998 !important;
-            padding: 12px !important;
-            border-radius: 18px !important;
-            background: rgba(7,22,32,.98) !important;
-            border: 1px solid rgba(0,229,212,.45) !important;
-            box-shadow: 0 16px 45px rgba(0,0,0,.55) !important;
-            backdrop-filter: blur(12px);
-        }
-        .mobile-menu-panel-title {
-            color: #EAFBFF;
-            font-weight: 900;
-            font-size: 12px;
-            letter-spacing: .08em;
-            padding: 4px 5px 10px 5px;
-            border-bottom: 1px solid rgba(0,229,212,.2);
-            margin-bottom: 8px;
-        }
-        .mobile-menu-backdrop {
-            position: fixed !important;
-            inset: 0 !important;
-            z-index: 999997 !important;
-            background: rgba(0,0,0,.18) !important;
-        }
-
         /* Menu mobile : bouton hamburger fixe à gauche */
         /* Le bouton natif Streamlit peut changer de sélecteur selon la version. */
         button[data-testid="stSidebarCollapsedControl"],
@@ -1843,67 +1780,6 @@ st.markdown(f'''
     </div>
 ''', unsafe_allow_html=True)
 
-# --- MENU MOBILE DEPUIS LA PAGE D'ACCUEIL ---
-# Le bouton hamburger est placé immédiatement sous l'en-tête afin d'être
-# visible dès l'arrivée sur la page. Il ouvre les sous-menus de navigation.
-st.markdown("""<style>
-@media (min-width: 769px) {
-  .mobile-home-nav { display: none !important; }
-}
-@media (max-width: 768px) {
-  div[data-testid="stPopover"] {
-    position: fixed !important;
-    left: 10px !important;
-    top: 10px !important;
-    z-index: 1000000 !important;
-  }
-  div[data-testid="stPopover"] > button {
-    width: 54px !important; height: 54px !important; min-width: 54px !important;
-    border-radius: 15px !important;
-    padding: 0 !important;
-    font-size: 28px !important;
-    font-weight: 900 !important;
-    border: 2px solid rgba(0,229,212,.75) !important;
-    box-shadow: 0 6px 18px rgba(0,0,0,.30) !important;
-  }
-  div[data-testid="stPopoverContent"] .stButton > button {
-    min-height: 48px !important;
-    width: 100% !important;
-    text-align: left !important;
-    font-size: 13px !important;
-    font-weight: 800 !important;
-    margin-bottom: 6px !important;
-  }
-}
-</style>""", unsafe_allow_html=True)
-
-_mobile_home_nav = st.container()
-with _mobile_home_nav:
-    with st.popover("☰", use_container_width=False):
-        st.markdown("### 📡 NAVIGATION")
-        if ROLE == 'ZONE':
-            _mobile_options = [
-                "🚨 Rapport du jour",
-                "🗓️ Planning",
-                "🧠 Rex & Formations",
-                "🚀 Vérifier & Soumettre",
-            ]
-            for _label in _mobile_options:
-                if st.button(_label, key=f"mobile_home_zone_{_label}", use_container_width=True):
-                    st.session_state.zone_menu = _label
-                    st.rerun()
-        else:
-            _mobile_options = [
-                "✨ Actualités opérationnelles",
-                "📄 Problématiques",
-                "📅 Week-ends",
-                "🗓️ Planning secteurs",
-            ]
-            for _label in _mobile_options:
-                if st.button(_label, key=f"mobile_home_sup_{_label}", use_container_width=True):
-                    st.session_state.sup_menu = _label
-                    st.rerun()
-
 # Barre supérieure
 c_top1, c_top2 = st.columns([4, 1.2])
 with c_top1:
@@ -2216,8 +2092,6 @@ def _render_supervisor_status_dashboard(report_date):
     st.markdown('<div class="section-title">🏠 SUIVI DES RAPPORTS PAR ZONE</div>', unsafe_allow_html=True)
     st.dataframe(status_df, use_container_width=True, hide_index=True)
 
-# --- MENU MOBILE HAMBURGER PERSONNALISÉ ---
-# Popover Streamlit : le bouton est réellement cliquable sur mobile et ouvre
 # --- MODE ZONE ---
 if ROLE == 'ZONE':
     diff, cells0, dr0, ins0, deg0, forms0, plan0 = load(r, ZONE)
@@ -2551,7 +2425,8 @@ if ROLE == 'ZONE':
         with ex2:
             st.download_button('📄 CSV', data=pivot_df.to_csv(index=False).encode('utf-8-sig'), file_name=f'Planning_{ZONE}_{m_year}_{m_month:02d}.csv', mime='text/csv', use_container_width=True, key='download_monthly_csv_simple2')
 
-    
+        st.markdown('</div>', unsafe_allow_html=True)
+
     elif zone_menu == "🧠 Rex & Formations":
         st.markdown('<div class="section-title">🧠 PARTAGE D\'EXPÉRIENCE & SESSIONS</div>', unsafe_allow_html=True)
 
