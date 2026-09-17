@@ -155,7 +155,7 @@ st.set_page_config(
     page_title='Yas DFO-SRTM – Hub Opérationnel Maritime', 
     page_icon='📡', 
     layout='wide',
-    initial_sidebar_state='collapsed'
+    initial_sidebar_state='expanded'
 )
 
 # --- LOGO : recherche robuste (script + ancien chemin Windows) ---
@@ -186,7 +186,7 @@ def render_logo(width=180):
 # --- CHARTE GRAPHIQUE COMPLÈTE YAS EN FOND BLEU MARINE ---
 st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap');
     
     html, body, [class*="css"] {
         font-family: 'Montserrat', system-ui, -apple-system, sans-serif;
@@ -743,291 +743,6 @@ st.markdown("""
         min-height: 42px !important;
     }
 
-
-    /* ============================================================
-       MODE MOBILE — interface tactile et responsive
-       ============================================================ */
-    @media (max-width: 768px) {
-        .main .block-container {
-            padding: 0.75rem 0.65rem 2rem 0.65rem !important;
-            max-width: 100% !important;
-        }
-
-        /* En-tête compact */
-        .header-banner {
-            padding: 14px 15px !important;
-            border-radius: 14px !important;
-            margin-bottom: 14px !important;
-            flex-direction: column !important;
-            align-items: flex-start !important;
-            gap: 10px !important;
-        }
-        .header-title-box {
-            gap: 10px !important;
-            width: 100% !important;
-        }
-        .header-title {
-            font-size: 18px !important;
-            line-height: 1.2 !important;
-        }
-        .header-subtitle {
-            font-size: 10px !important;
-            line-height: 1.35 !important;
-        }
-        .role-badge {
-            align-self: flex-start !important;
-            padding: 7px 11px !important;
-            font-size: 10px !important;
-        }
-
-        /* Titres et cartes */
-        .section-title {
-            font-size: 14px !important;
-            margin-bottom: 11px !important;
-        }
-        .page-intro, .quick-help, .welcome-strip, .ops-hero {
-            padding: 10px 11px !important;
-            margin-bottom: 12px !important;
-            border-radius: 11px !important;
-        }
-        .page-intro-title { font-size: 13px !important; }
-        .page-intro-text { font-size: 11px !important; }
-
-        /* Toutes les colonnes passent proprement en pleine largeur.
-           Cela évite les champs écrasés et les boutons minuscules. */
-        div[data-testid="stHorizontalBlock"] {
-            flex-wrap: wrap !important;
-            gap: 0.55rem !important;
-        }
-        div[data-testid="stHorizontalBlock"] > div[data-testid="column"] {
-            flex: 1 1 100% !important;
-            width: 100% !important;
-            min-width: 100% !important;
-        }
-
-        /* KPI */
-        div[data-testid="stMetric"] {
-            padding: 11px 13px !important;
-            border-radius: 12px !important;
-            margin-bottom: 3px !important;
-        }
-        div[data-testid="stMetricLabel"] {
-            font-size: 10px !important;
-        }
-        div[data-testid="stMetricValue"] {
-            font-size: 23px !important;
-        }
-
-        /* Champs tactiles */
-        .stButton > button,
-        .stDownloadButton > button,
-        button[data-testid="stBaseButton-secondary"],
-        button[data-testid="stBaseButton-primary"] {
-            width: 100% !important;
-            min-height: 46px !important;
-            padding: 10px 13px !important;
-            font-size: 12px !important;
-        }
-        input, textarea, [data-baseweb="select"] {
-            font-size: 16px !important;
-        }
-        .stTextInput input,
-        .stNumberInput input,
-        .stTextArea textarea {
-            min-height: 44px !important;
-        }
-
-        /* Onglets : défilement horizontal plutôt que boutons écrasés */
-        .stTabs [data-baseweb="tab-list"] {
-            gap: 6px !important;
-            overflow-x: auto !important;
-            flex-wrap: nowrap !important;
-            scrollbar-width: thin;
-            padding-bottom: 7px !important;
-        }
-        .stTabs [data-baseweb="tab"] {
-            flex: 0 0 auto !important;
-            white-space: nowrap !important;
-            padding: 9px 13px !important;
-            font-size: 11px !important;
-        }
-
-        /* Tableaux larges : conservation du contenu avec défilement */
-        div[data-testid="stDataEditor"],
-        div[data-testid="stDataFrame"] {
-            max-width: 100% !important;
-            overflow-x: auto !important;
-            -webkit-overflow-scrolling: touch !important;
-        }
-        .planning-card {
-            padding: 9px !important;
-            border-radius: 12px !important;
-        }
-        .planning-header {
-            font-size: 16px !important;
-            padding: 10px 12px !important;
-        }
-        .planning-legend {
-            font-size: 10px !important;
-            overflow-x: auto !important;
-            white-space: nowrap !important;
-            flex-wrap: nowrap !important;
-        }
-
-        /* Synthèse journalière */
-        .daily-report-header {
-            padding: 11px 12px !important;
-            flex-direction: column !important;
-            align-items: flex-start !important;
-            gap: 8px !important;
-        }
-        .daily-report-title {
-            font-size: 16px !important;
-        }
-        .daily-report-date {
-            min-width: 0 !important;
-            width: 100% !important;
-            box-sizing: border-box !important;
-            padding: 6px 10px !important;
-        }
-        .daily-section-title {
-            font-size: 13px !important;
-            padding: 8px 10px !important;
-            margin-top: 12px !important;
-        }
-        .daily-report-table {
-            font-size: 10px !important;
-            min-width: 650px !important;
-        }
-        .daily-report {
-            overflow-x: auto !important;
-            -webkit-overflow-scrolling: touch !important;
-        }
-        .daily-report-summary {
-            flex-wrap: wrap !important;
-            gap: 7px !important;
-        }
-        .summary-card {
-            flex: 1 1 100px !important;
-            min-width: 0 !important;
-            padding: 7px 10px !important;
-        }
-
-        /* Galerie REX : vignettes plus lisibles sur petit écran */
-        .zone-space-card {
-            margin: 10px 0 7px 0 !important;
-            padding: 11px !important;
-            border-radius: 14px !important;
-        }
-        .zone-space-title { font-size: 11px !important; }
-        .zone-space-subtitle { font-size: 9px !important; }
-        .zone-kpi {
-            padding: 7px 5px !important;
-        }
-
-        /* Connexion */
-        .login-wrapper {
-            max-width: none !important;
-            width: 100% !important;
-            box-sizing: border-box !important;
-            margin: 18px auto 12px auto !important;
-            padding: 24px 16px !important;
-            border-radius: 18px !important;
-        }
-
-        /* Menu mobile : bouton hamburger fixe à gauche */
-        /* Le bouton natif Streamlit peut changer de sélecteur selon la version. */
-        button[data-testid="stSidebarCollapsedControl"],
-        button[aria-label="Expand sidebar"],
-        button[aria-label="Open sidebar"],
-        button[title="Expand sidebar"],
-        button[title="Open sidebar"],
-        button[aria-label*="sidebar" i][aria-expanded="false"] {
-            position: fixed !important;
-            left: 10px !important;
-            top: 10px !important;
-            z-index: 999999 !important;
-            width: 46px !important;
-            height: 46px !important;
-            min-width: 46px !important;
-            min-height: 46px !important;
-            border-radius: 13px !important;
-            background: rgba(10, 25, 35, .96) !important;
-            border: 1px solid rgba(0, 229, 212, .55) !important;
-            box-shadow: 0 6px 20px rgba(0,0,0,.32) !important;
-            padding: 0 !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-        }
-        button[data-testid="stSidebarCollapsedControl"] svg,
-        button[aria-label="Expand sidebar"] svg,
-        button[aria-label="Open sidebar"] svg,
-        button[title="Expand sidebar"] svg,
-        button[title="Open sidebar"] svg {
-            display: none !important;
-        }
-        button[data-testid="stSidebarCollapsedControl"]::before,
-        button[aria-label="Expand sidebar"]::before,
-        button[aria-label="Open sidebar"]::before,
-        button[title="Expand sidebar"]::before,
-        button[title="Open sidebar"]::before {
-            content: "☰";
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            width: 100% !important;
-            height: 100% !important;
-            color: #00E5D4 !important;
-            font-size: 23px !important;
-            line-height: 1 !important;
-            font-weight: 900 !important;
-        }
-        button[data-testid="stSidebarCollapsedControl"]:hover,
-        button[aria-label="Expand sidebar"]:hover,
-        button[aria-label="Open sidebar"]:hover,
-        button[title="Expand sidebar"]:hover,
-        button[title="Open sidebar"]:hover {
-            background: rgba(0, 229, 212, .16) !important;
-            border-color: #00E5D4 !important;
-        }
-
-        /* Décale légèrement le contenu pour laisser respirer le hamburger */
-        .main .block-container {
-            padding-top: 4.2rem !important;
-        }
-
-        /* Sidebar plus compacte lorsqu'elle est ouverte sur mobile */
-        section[data-testid="stSidebar"] > div {
-            padding: 0.7rem 0.65rem 1rem 0.65rem !important;
-        }
-        .sidebar-brand {
-            padding: 12px 10px !important;
-            margin-bottom: 12px !important;
-            border-radius: 14px !important;
-        }
-        .sidebar-brand .brand-icon { font-size: 22px !important; }
-        .sidebar-brand .brand-title { font-size: 13px !important; }
-        section[data-testid="stSidebar"] div[role="radiogroup"] > label {
-            min-height: 48px !important;
-            padding: 11px 10px !important;
-        }
-        section[data-testid="stSidebar"] div[role="radiogroup"] > label p {
-            font-size: 11px !important;
-        }
-    }
-
-    /* Très petits écrans */
-    @media (max-width: 380px) {
-        .main .block-container {
-            padding-left: 0.45rem !important;
-            padding-right: 0.45rem !important;
-        }
-        .header-title { font-size: 16px !important; }
-        .section-title { font-size: 13px !important; }
-        .daily-report-table { font-size: 9px !important; }
-    }
-
     /* --- Synthèse journalière inspirée du modèle fourni --- */
     .daily-report {
         background: #FFFFFF;
@@ -1157,6 +872,65 @@ st.markdown("""
                 padding-top: 8px;
                 border-top: 1px solid rgba(0,229,212,.22);
             }
+
+
+    /* =========================================================
+       SUPPRESSION DEFINITIVE DU BOUTON << / CONTRÔLE SIDEBAR
+       Compatible avec plusieurs versions de Streamlit
+       ========================================================= */
+
+    /* Contrôle natif Streamlit : le data-testid est porté par le conteneur */
+    div[data-testid="stSidebarCollapseButton"],
+    div[data-testid="stSidebarCollapseButton"] *,
+    button[data-testid="stSidebarCollapseButton"],
+    button[data-testid="stSidebarCollapseButton"] *,
+    div[data-testid="collapsedControl"],
+    div[data-testid="collapsedControl"] *,
+    [data-testid="collapsedControl"],
+    [data-testid="collapsedControl"] *,
+
+    /* Fallback pour les variantes plus anciennes */
+    button[kind="header"],
+    button[data-testid="baseButton-headerNoPadding"],
+
+    /* Contrôles identifiés par leur libellé */
+    button[aria-label*="collapse" i],
+    button[aria-label*="expand" i],
+    button[aria-label*="sidebar" i],
+    button[title*="collapse" i],
+    button[title*="expand" i],
+    button[title*="sidebar" i],
+
+    /* Le contrôle situé dans l'en-tête de la sidebar */
+    section[data-testid="stSidebar"] div[data-testid="stSidebarCollapseButton"],
+    section[data-testid="stSidebar"] > div button[kind="header"],
+    section[data-testid="stSidebar"] button[data-testid="baseButton-headerNoPadding"],
+    section[data-testid="stSidebar"] button[data-testid="stSidebarCollapseButton"] {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+        width: 0 !important;
+        height: 0 !important;
+        min-width: 0 !important;
+        min-height: 0 !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        border: 0 !important;
+    }
+
+    /* Empêcher la sidebar de partir vers la gauche */
+    section[data-testid="stSidebar"],
+    section[data-testid="stSidebar"][aria-expanded="false"] {
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        transform: translateX(0) !important;
+        margin-left: 0 !important;
+        width: 300px !important;
+        min-width: 300px !important;
+        max-width: 300px !important;
+    }
 
 </style>
 """, unsafe_allow_html=True)
@@ -1761,6 +1535,7 @@ def load(r, z):
         plan = df_default.rename(columns={'ENTITE': 'ENTITÉ', 'Matricule': 'MATRICULE', 'Nom': 'NOM', 'Prénoms': 'PRÉNOMS', 'Fonction': 'FONCTION', 'Niveau': 'NIVEAU HIÉRARCHIQUE', 'Contrat': 'NATURE CONTRAT', 'Contact': 'CONTACT'})
         plan['RÔLE / GARDE'] = 'Service Normal'
     return (diff.iloc[0,0] if not diff.empty else ''), cells, dr, ins, deg, forms, plan
+
 
 # --- HEADER YAS ---
 st.markdown(f'''
