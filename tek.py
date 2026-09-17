@@ -935,6 +935,69 @@ st.markdown("""
             border-radius: 18px !important;
         }
 
+        /* HAMBURGER MOBILE PERSONNALISÉ — indépendant du bouton natif Streamlit */
+        div[data-testid="stButton"]:has(button[kind="secondary"]) {
+            position: relative;
+        }
+        div[data-testid="stButton"]:has(button) {
+            position: fixed !important;
+            left: 10px !important;
+            top: 10px !important;
+            z-index: 1000000 !important;
+            width: 48px !important;
+            height: 48px !important;
+        }
+        button:has(p) {
+            width: 48px !important;
+            height: 48px !important;
+            min-width: 48px !important;
+            min-height: 48px !important;
+            padding: 0 !important;
+            border-radius: 14px !important;
+            border: 1px solid rgba(0,229,212,.65) !important;
+            background: rgba(7,22,32,.98) !important;
+            box-shadow: 0 7px 24px rgba(0,0,0,.38) !important;
+            color: #00E5D4 !important;
+        }
+        button:has(p) p {
+            font-size: 0 !important;
+        }
+        button:has(p) p::after {
+            content: "☰" !important;
+            font-size: 25px !important;
+            line-height: 1 !important;
+        }
+        .mobile-menu-panel {
+            position: fixed !important;
+            left: 8px !important;
+            top: 66px !important;
+            width: min(310px, calc(100vw - 16px)) !important;
+            max-height: calc(100vh - 82px) !important;
+            overflow-y: auto !important;
+            z-index: 999998 !important;
+            padding: 12px !important;
+            border-radius: 18px !important;
+            background: rgba(7,22,32,.98) !important;
+            border: 1px solid rgba(0,229,212,.45) !important;
+            box-shadow: 0 16px 45px rgba(0,0,0,.55) !important;
+            backdrop-filter: blur(12px);
+        }
+        .mobile-menu-panel-title {
+            color: #EAFBFF;
+            font-weight: 900;
+            font-size: 12px;
+            letter-spacing: .08em;
+            padding: 4px 5px 10px 5px;
+            border-bottom: 1px solid rgba(0,229,212,.2);
+            margin-bottom: 8px;
+        }
+        .mobile-menu-backdrop {
+            position: fixed !important;
+            inset: 0 !important;
+            z-index: 999997 !important;
+            background: rgba(0,0,0,.18) !important;
+        }
+
         /* Menu mobile : bouton hamburger fixe à gauche */
         /* Le bouton natif Streamlit peut changer de sélecteur selon la version. */
         button[data-testid="stSidebarCollapsedControl"],
@@ -2091,6 +2154,47 @@ def _render_supervisor_status_dashboard(report_date):
     status_df = pd.DataFrame(rows)
     st.markdown('<div class="section-title">🏠 SUIVI DES RAPPORTS PAR ZONE</div>', unsafe_allow_html=True)
     st.dataframe(status_df, use_container_width=True, hide_index=True)
+
+# --- MENU MOBILE HAMBURGER PERSONNALISÉ ---
+# Popover Streamlit : le bouton est réellement cliquable sur mobile et ouvre
+# les menus sans dépendre des sélecteurs internes de la sidebar.
+st.markdown("""<style>
+@media (min-width: 769px) {
+  div[data-testid="stPopover"] { display:none !important; }
+}
+@media (max-width: 768px) {
+  div[data-testid="stPopover"] {
+    position: fixed !important;
+    left: 10px !important;
+    top: 10px !important;
+    z-index: 1000000 !important;
+  }
+  div[data-testid="stPopover"] > button {
+    width: 48px !important; height: 48px !important; min-width:48px !important;
+    border-radius: 14px !important; padding: 0 !important;
+    background: rgba(7,22,32,.98) !important;
+    border: 1px solid rgba(0,229,212,.65) !important;
+    color: #00E5D4 !important; font-size: 25px !important;
+    box-shadow: 0 7px 24px rgba(0,0,0,.38) !important;
+  }
+  .main .block-container { padding-top: 4.5rem !important; }
+}
+</style>""", unsafe_allow_html=True)
+
+with st.popover("☰", use_container_width=False):
+    st.markdown("### 📡 NAVIGATION")
+    if ROLE == 'ZONE':
+        _mobile_options = ["🚨 Rapport du jour", "🗓️ Planning", "🧠 Rex & Formations", "🚀 Vérifier & Soumettre"]
+        for _label in _mobile_options:
+            if st.button(_label, key=f"mobile_nav_zone_{_label}", use_container_width=True):
+                st.session_state.zone_menu = _label
+                st.rerun()
+    else:
+        _mobile_options = ["✨ Actualités opérationnelles", "📄 Problématiques", "📅 Week-ends", "🗓️ Planning secteurs"]
+        for _label in _mobile_options:
+            if st.button(_label, key=f"mobile_nav_sup_{_label}", use_container_width=True):
+                st.session_state.sup_menu = _label
+                st.rerun()
 
 # --- MODE ZONE ---
 if ROLE == 'ZONE':
