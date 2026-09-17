@@ -936,7 +936,12 @@ st.markdown("""
         }
 
         /* Menu mobile : bouton hamburger fixe à gauche */
+        /* Le bouton natif Streamlit peut changer de sélecteur selon la version. */
         button[data-testid="stSidebarCollapsedControl"],
+        button[aria-label="Expand sidebar"],
+        button[aria-label="Open sidebar"],
+        button[title="Expand sidebar"],
+        button[title="Open sidebar"],
         button[aria-label*="sidebar" i][aria-expanded="false"] {
             position: fixed !important;
             left: 10px !important;
@@ -955,10 +960,18 @@ st.markdown("""
             align-items: center !important;
             justify-content: center !important;
         }
-        button[data-testid="stSidebarCollapsedControl"] svg {
+        button[data-testid="stSidebarCollapsedControl"] svg,
+        button[aria-label="Expand sidebar"] svg,
+        button[aria-label="Open sidebar"] svg,
+        button[title="Expand sidebar"] svg,
+        button[title="Open sidebar"] svg {
             display: none !important;
         }
-        button[data-testid="stSidebarCollapsedControl"]::before {
+        button[data-testid="stSidebarCollapsedControl"]::before,
+        button[aria-label="Expand sidebar"]::before,
+        button[aria-label="Open sidebar"]::before,
+        button[title="Expand sidebar"]::before,
+        button[title="Open sidebar"]::before {
             content: "☰";
             display: flex !important;
             align-items: center !important;
@@ -970,7 +983,11 @@ st.markdown("""
             line-height: 1 !important;
             font-weight: 900 !important;
         }
-        button[data-testid="stSidebarCollapsedControl"]:hover {
+        button[data-testid="stSidebarCollapsedControl"]:hover,
+        button[aria-label="Expand sidebar"]:hover,
+        button[aria-label="Open sidebar"]:hover,
+        button[title="Expand sidebar"]:hover,
+        button[title="Open sidebar"]:hover {
             background: rgba(0, 229, 212, .16) !important;
             border-color: #00E5D4 !important;
         }
