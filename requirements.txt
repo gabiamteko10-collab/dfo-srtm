@@ -1,4 +1,4 @@
-base64
+
 streamlit
 pandas
 sqlite3
