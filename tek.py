@@ -186,41 +186,7 @@ def render_logo(width=180):
 # --- CHARTE GRAPHIQUE COMPLÈTE YAS EN FOND BLEU MARINE ---
 st.markdown("""
     <style>
-    /* ===== MENU LATERAL YAS : CONTROLE MANUEL ===== */
-    /* Le bouton natif Streamlit est remplacé par notre bouton YAS. */
-    button[data-testid="stSidebarCollapseButton"],
-    div[data-testid="stSidebarCollapseButton"],
-    div[data-testid="stSidebarCollapseButton"] * {
-        display: none !important;
-    }
-
-    [data-testid="collapsedControl"] {
-        display: none !important;
-    }
-
-    section[data-testid="stSidebar"] button[aria-label*="sidebar" i],
-    section[data-testid="stSidebar"] button[aria-label*="Sidebar" i] {
-        display: none !important;
-    }
-
-    /* Bouton flottant pour faire revenir le menu */
-    .yas-menu-toggle {
-        position: fixed;
-        top: 18px;
-        left: 10px;
-        z-index: 999999;
-        background: #FFD21F;
-        color: #002B5B;
-        border: 2px solid #002B5B;
-        border-radius: 10px;
-        padding: 8px 12px;
-        font-size: 18px;
-        font-weight: 800;
-        cursor: pointer;
-        box-shadow: 0 3px 12px rgba(0,0,0,.25);
-    }
-
-    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap');
     
     html, body, [class*="css"] {
         font-family: 'Montserrat', system-ui, -apple-system, sans-serif;
@@ -908,115 +874,268 @@ st.markdown("""
             }
 
 
+    /* =========================================================
+       SUPPRESSION DEFINITIVE DU BOUTON << / CONTRÔLE SIDEBAR
+       Compatible avec plusieurs versions de Streamlit
+       ========================================================= */
 
-    /* ===== NAVIGATION MOBILE : barre fixe en bas ===== */
+    /* Contrôle natif Streamlit : le data-testid est porté par le conteneur */
+    div[data-testid="stSidebarCollapseButton"],
+    div[data-testid="stSidebarCollapseButton"] *,
+    button[data-testid="stSidebarCollapseButton"],
+    button[data-testid="stSidebarCollapseButton"] *,
+    div[data-testid="collapsedControl"],
+    div[data-testid="collapsedControl"] *,
+    [data-testid="collapsedControl"],
+    [data-testid="collapsedControl"] *,
+
+    /* Fallback pour les variantes plus anciennes */
+    button[kind="header"],
+    button[data-testid="baseButton-headerNoPadding"],
+
+    /* Contrôles identifiés par leur libellé */
+    button[aria-label*="collapse" i],
+    button[aria-label*="expand" i],
+    button[aria-label*="sidebar" i],
+    button[title*="collapse" i],
+    button[title*="expand" i],
+    button[title*="sidebar" i],
+
+    /* Le contrôle situé dans l'en-tête de la sidebar */
+    section[data-testid="stSidebar"] div[data-testid="stSidebarCollapseButton"],
+    section[data-testid="stSidebar"] > div button[kind="header"],
+    section[data-testid="stSidebar"] button[data-testid="baseButton-headerNoPadding"],
+    section[data-testid="stSidebar"] button[data-testid="stSidebarCollapseButton"] {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+        width: 0 !important;
+        height: 0 !important;
+        min-width: 0 !important;
+        min-height: 0 !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        border: 0 !important;
+    }
+
+    /* Empêcher la sidebar de partir vers la gauche sur ordinateur */
+    section[data-testid="stSidebar"],
+    section[data-testid="stSidebar"][aria-expanded="false"] {
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        transform: translateX(0) !important;
+        margin-left: 0 !important;
+        width: 300px !important;
+        min-width: 300px !important;
+        max-width: 300px !important;
+    }
+
+    /* =========================================================
+       NAVIGATION MOBILE — BOUTON FLOTTANT + PANNEAU DÉROULANT
+       ========================================================= */
+    .mobile-menu-shell,
+    .st-key-mobile_menu_shell {
+        display: none !important;
+    }
+
+    .mobile-drawer-panel {
+        background: linear-gradient(180deg, #06264A 0%, #0A3157 100%);
+        border: 1px solid rgba(0, 229, 212, .65);
+        border-radius: 18px;
+        padding: 14px;
+        margin: 8px 0 18px 0;
+        box-shadow: 0 14px 35px rgba(0,0,0,.35);
+    }
+
+    .mobile-drawer-title {
+        color: #FFFFFF;
+        font-size: 13px;
+        font-weight: 900;
+        letter-spacing: 1px;
+        margin-bottom: 10px;
+    }
+
+    .mobile-menu-btn {
+        margin: 5px 0 !important;
+    }
+
+    .mobile-menu-btn button {
+        width: 100% !important;
+        min-height: 52px !important;
+        border-radius: 13px !important;
+        border: 1px solid rgba(0,229,212,.55) !important;
+        background: #0C3A63 !important;
+        color: #FFFFFF !important;
+        font-weight: 800 !important;
+        text-align: left !important;
+        padding: 10px 14px !important;
+        text-transform: none !important;
+        box-shadow: none !important;
+    }
+
+    .mobile-menu-btn button:hover {
+        background: #14517F !important;
+        border-color: #FFCC00 !important;
+        transform: none !important;
+    }
+
+    .mobile-menu-btn-active button {
+        background: linear-gradient(135deg,#FFCC00,#FFB300) !important;
+        color: #07152E !important;
+        border-color: #FFCC00 !important;
+    }
+
+    .mobile-menu-close button {
+        width: 100% !important;
+        min-height: 42px !important;
+        border-radius: 11px !important;
+        background: transparent !important;
+        border: 1px solid rgba(255,255,255,.20) !important;
+        color: #DDEBFF !important;
+        font-weight: 800 !important;
+        text-transform: none !important;
+        margin-top: 8px !important;
+    }
+
+    .mobile-menu-current {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        background: rgba(0,229,212,.10);
+        border: 1px solid rgba(0,229,212,.45);
+        border-radius: 13px;
+        padding: 10px 12px;
+        color: #FFFFFF;
+        font-size: 12px;
+        font-weight: 800;
+        margin-bottom: 8px;
+    }
+
+
+    /* Bouton principal du menu mobile */
+    .st-key-mobile_menu_trigger {
+        width: 100% !important;
+        margin: 0 0 8px 0 !important;
+    }
+    .st-key-mobile_menu_trigger button {
+        width: 100% !important;
+        min-height: 50px !important;
+        border-radius: 14px !important;
+        background: linear-gradient(135deg, #07365F 0%, #0B527C 100%) !important;
+        border: 1px solid rgba(0,229,212,.70) !important;
+        color: #FFFFFF !important;
+        font-weight: 900 !important;
+        text-align: left !important;
+        padding: 10px 14px !important;
+        text-transform: none !important;
+        box-shadow: 0 5px 16px rgba(0,0,0,.24) !important;
+    }
+    .st-key-mobile_menu_trigger button:hover {
+        border-color: #FFCC00 !important;
+        background: linear-gradient(135deg, #0B527C 0%, #126B91 100%) !important;
+        transform: none !important;
+    }
+
+    /* Les boutons de choix utilisent leurs conteneurs Streamlit réels. */
+    .st-key-mobile_nav_ZONE_0 button,
+    .st-key-mobile_nav_ZONE_1 button,
+    .st-key-mobile_nav_ZONE_2 button,
+    .st-key-mobile_nav_ZONE_3 button,
+    .st-key-mobile_nav_CHEF_0 button,
+    .st-key-mobile_nav_CHEF_1 button,
+    .st-key-mobile_nav_CHEF_2 button,
+    .st-key-mobile_nav_CHEF_3 button {
+        width: 100% !important;
+        min-height: 52px !important;
+        border-radius: 13px !important;
+        border: 1px solid rgba(0,229,212,.55) !important;
+        background: #0C3A63 !important;
+        color: #FFFFFF !important;
+        font-weight: 800 !important;
+        text-align: left !important;
+        padding: 10px 14px !important;
+        text-transform: none !important;
+        box-shadow: none !important;
+        margin: 4px 0 !important;
+    }
+    .st-key-mobile_nav_ZONE_0 button:hover,
+    .st-key-mobile_nav_ZONE_1 button:hover,
+    .st-key-mobile_nav_ZONE_2 button:hover,
+    .st-key-mobile_nav_ZONE_3 button:hover,
+    .st-key-mobile_nav_CHEF_0 button:hover,
+    .st-key-mobile_nav_CHEF_1 button:hover,
+    .st-key-mobile_nav_CHEF_2 button:hover,
+    .st-key-mobile_nav_CHEF_3 button:hover {
+        background: #14517F !important;
+        border-color: #FFCC00 !important;
+        transform: none !important;
+    }
+
+    .st-key-mobile_menu_close_ZONE button,
+    .st-key-mobile_menu_close_CHEF button {
+        width: 100% !important;
+        min-height: 42px !important;
+        border-radius: 11px !important;
+        background: transparent !important;
+        border: 1px solid rgba(255,255,255,.20) !important;
+        color: #DDEBFF !important;
+        font-weight: 800 !important;
+        text-transform: none !important;
+        margin-top: 8px !important;
+    }
+
     @media (max-width: 768px) {
-        /* La sidebar desktop ne doit jamais recouvrir le contenu sur téléphone. */
-        section[data-testid="stSidebar"],
-        div[data-testid="stSidebarCollapseButton"],
-        div[data-testid="collapsedControl"] {
+        /* La sidebar desktop est supprimée sur téléphone. */
+        section[data-testid="stSidebar"] {
             display: none !important;
+            visibility: hidden !important;
+            width: 0 !important;
+            min-width: 0 !important;
+            max-width: 0 !important;
         }
 
-        /* Le contenu principal occupe toute la largeur. */
-        [data-testid="stMainBlockContainer"],
-        [data-testid="stAppViewContainer"] > .main {
-            padding-left: 0.65rem !important;
-            padding-right: 0.65rem !important;
-            padding-bottom: 92px !important;
-        }
-
-        /* Navigation mobile fixe en bas. */
-        div[data-testid="stRadio"] {
-            position: fixed !important;
-            left: 0 !important;
-            right: 0 !important;
-            bottom: 0 !important;
-            z-index: 999999 !important;
-            width: 100vw !important;
-            box-sizing: border-box !important;
-            background: rgba(6, 21, 46, 0.98) !important;
-            border-top: 1px solid rgba(0, 229, 212, 0.55) !important;
-            box-shadow: 0 -8px 24px rgba(0,0,0,.28) !important;
-            padding: 7px 5px calc(7px + env(safe-area-inset-bottom)) !important;
-            margin: 0 !important;
-        }
-
-        div[data-testid="stRadio"] > label {
-            display: none !important;
-        }
-
-        div[data-testid="stRadio"] div[role="radiogroup"] {
-            display: grid !important;
-            grid-template-columns: repeat(4, 1fr) !important;
-            gap: 4px !important;
+        /* Le menu mobile reste dans le flux : il ne recouvre jamais les données. */
+        .mobile-menu-shell,
+        .st-key-mobile_menu_shell {
+            display: block !important;
             width: 100% !important;
+            margin: 0 0 12px 0 !important;
         }
 
-        div[data-testid="stRadio"] div[role="radiogroup"] > label {
-            display: flex !important;
-            flex-direction: column !important;
-            align-items: center !important;
-            justify-content: center !important;
-            text-align: center !important;
-            min-height: 50px !important;
-            padding: 5px 2px !important;
-            margin: 0 !important;
-            border-radius: 10px !important;
-            background: transparent !important;
-            color: #DCEAF7 !important;
-            font-size: 10px !important;
-            font-weight: 800 !important;
-            line-height: 1.15 !important;
+        [data-testid="stAppViewContainer"],
+        [data-testid="stAppViewContainer"] > .main,
+        [data-testid="stMain"] {
+            width: 100% !important;
+            max-width: 100% !important;
+            margin-left: 0 !important;
+            padding-left: 0 !important;
         }
 
-        div[data-testid="stRadio"] div[role="radiogroup"] > label[data-checked="true"] {
-            background: rgba(0, 229, 212, 0.14) !important;
-            color: #FFD21F !important;
-            box-shadow: inset 0 0 0 1px rgba(0,229,212,.35) !important;
+        [data-testid="stAppViewContainer"] .main .block-container {
+            width: 100% !important;
+            max-width: 100% !important;
+            padding-left: .75rem !important;
+            padding-right: .75rem !important;
+            padding-top: .65rem !important;
+            padding-bottom: 1.5rem !important;
         }
 
-        div[data-testid="stRadio"] div[role="radiogroup"] > label > div:first-child {
-            display: none !important;
-        }
-
-        /* Réduire les espacements verticaux sur petit écran. */
+        /* Header mobile compact */
         .header-banner {
-            margin-top: 0 !important;
-            padding: 12px 10px !important;
+            padding: 13px 14px !important;
+            border-radius: 16px !important;
+            margin-bottom: 10px !important;
+            min-height: 92px !important;
         }
-
-        .header-title {
-            font-size: 18px !important;
-        }
-
-        .header-subtitle {
-            font-size: 9px !important;
-        }
-
-        .page-intro {
-            padding: 12px !important;
-        }
-
-        .page-intro-text {
-            font-size: 11px !important;
-        }
-
-        div[data-testid="stHorizontalBlock"] {
-            gap: 0.45rem !important;
-        }
-
-        .zone-space-card {
-            margin-top: 8px !important;
-        }
+        .header-title-box { gap: 9px !important; }
+        .header-title { font-size: 17px !important; line-height: 1.1 !important; }
+        .header-subtitle { font-size: 8px !important; }
+        .role-badge { font-size: 8px !important; padding: 7px 8px !important; }
     }
 
-    /* Sur ordinateur, la navigation mobile est invisible. */
-    @media (min-width: 769px) {
-        div[data-testid="stRadio"] {
-            display: none !important;
-        }
-    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -1952,8 +2071,65 @@ def _render_supervisor_status_dashboard(report_date):
     st.markdown('<div class="section-title">🏠 SUIVI DES RAPPORTS PAR ZONE</div>', unsafe_allow_html=True)
     st.dataframe(status_df, use_container_width=True, hide_index=True)
 
+# --- NAVIGATION MOBILE : BOUTON + PANNEAU DÉROULANT ---
+_ZONE_NAV_OPTIONS = [
+    "🚨 Rapport du jour",
+    "🗓️ Planning",
+    "🧠 Rex & Formations",
+    "🚀 Vérifier & Soumettre",
+]
+_SUP_NAV_OPTIONS = [
+    "✨ Actualités opérationnelles",
+    "📊 Suivi des rapports",
+    "🗓️ Planning global",
+    "📈 Analyse & synthèse",
+]
+
+def _set_mobile_nav(value, role):
+    key = "zone_nav" if role == "ZONE" else "sup_nav"
+    st.session_state[key] = value
+    st.session_state["mobile_menu_open"] = False
+
+def _toggle_mobile_menu():
+    st.session_state["mobile_menu_open"] = not st.session_state.get("mobile_menu_open", False)
+
+def _render_mobile_navigation(role):
+    options = _ZONE_NAV_OPTIONS if role == "ZONE" else _SUP_NAV_OPTIONS
+    nav_key = "zone_nav" if role == "ZONE" else "sup_nav"
+    current = st.session_state.get(nav_key, options[0])
+    if current not in options:
+        current = options[0]
+        st.session_state[nav_key] = current
+
+    # Le conteneur est masqué sur desktop et devient visible sur mobile.
+    with st.container(key="mobile_menu_shell"):
+        trigger_label = f"☰  Navigation  •  {current}"
+        if st.button(trigger_label, key="mobile_menu_trigger", use_container_width=True):
+            _toggle_mobile_menu()
+
+        if st.session_state.get("mobile_menu_open", False):
+            st.markdown(f'<div class="mobile-drawer-panel"><div class="mobile-drawer-title">NAVIGATION • {"ZONE" if role == "ZONE" else "SUPERVISEUR"}</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="mobile-menu-current"><span>Page actuelle</span><strong>{html.escape(current)}</strong></div>', unsafe_allow_html=True)
+            for i, option in enumerate(options):
+                cls = "mobile-menu-btn mobile-menu-btn-active" if option == current else "mobile-menu-btn"
+                st.markdown(f'<div class="{cls}">', unsafe_allow_html=True)
+                if st.button(option, key=f"mobile_nav_{role}_{i}", use_container_width=True):
+                    _set_mobile_nav(option, role)
+                    st.rerun()
+                st.markdown('</div>', unsafe_allow_html=True)
+            st.markdown('<div class="mobile-menu-close">', unsafe_allow_html=True)
+            if st.button("✕  Fermer le menu", key=f"mobile_menu_close_{role}", use_container_width=True):
+                st.session_state["mobile_menu_open"] = False
+                st.rerun()
+            st.markdown('</div></div>', unsafe_allow_html=True)
+
+# Le menu mobile est placé immédiatement sous le header.
+_render_mobile_navigation(ROLE)
+
 # --- MODE ZONE ---
+
 if ROLE == 'ZONE':
+    _zone_nav_options = _ZONE_NAV_OPTIONS
     diff, cells0, dr0, ins0, deg0, forms0, plan0 = load(r, ZONE)
     _copied = st.session_state.get('copy_previous_data')
     if _copied and _copied.get('date') == r:
@@ -1978,45 +2154,17 @@ if ROLE == 'ZONE':
     </div>
     <div class="sidebar-section-label">Navigation • Zone</div>
     """, unsafe_allow_html=True)
-    zone_options = ["🚨 Rapport du jour", "🗓️ Planning", "🧠 Rex & Formations", "🚀 Vérifier & Soumettre"]
-
-    def _sync_zone_desktop():
-        st.session_state["zone_menu_active"] = st.session_state["zone_menu"]
-
-    def _sync_zone_mobile():
-        st.session_state["zone_menu_active"] = st.session_state["zone_menu_mobile"]
-
-    if "zone_menu_active" not in st.session_state:
-        st.session_state["zone_menu_active"] = zone_options[0]
-
-    # Navigation desktop : sidebar classique.
-    st.sidebar.radio(
+    _zone_sidebar_options = _zone_nav_options
+    _zone_sidebar_default = st.session_state.get("zone_nav", _zone_nav_options[0])
+    zone_menu_sidebar = st.sidebar.radio(
         "Sous-menus",
-        zone_options,
-        key="zone_menu",
-        label_visibility="collapsed",
-        on_change=_sync_zone_desktop
+        _zone_sidebar_options,
+        index=_zone_sidebar_options.index(_zone_sidebar_default) if _zone_sidebar_default in _zone_sidebar_options else 0,
+        key="zone_menu_sidebar",
+        on_change=_sync_zone_navigation,
+        label_visibility="collapsed"
     )
-
-    # Navigation mobile : barre fixe en bas, toujours accessible au pouce.
-    mobile_labels = ["🚨 Rapport", "🗓️ Planning", "🧠 Rex", "🚀 Soumettre"]
-    _mobile_to_full = dict(zip(mobile_labels, zone_options))
-
-    def _sync_zone_mobile_label():
-        st.session_state["zone_menu_active"] = _mobile_to_full[st.session_state["zone_menu_mobile_label"]]
-
-    if "zone_menu_mobile_label" not in st.session_state:
-        st.session_state["zone_menu_mobile_label"] = mobile_labels[0]
-
-    st.radio(
-        "Navigation mobile",
-        mobile_labels,
-        key="zone_menu_mobile_label",
-        label_visibility="collapsed",
-        on_change=_sync_zone_mobile_label
-    )
-
-    zone_menu = st.session_state["zone_menu_active"]
+    zone_menu = st.session_state.get("zone_nav", zone_menu_sidebar)
     # Tableau de bord intégré directement dans le carré « ESPACE ZONE ».
     _zone_status, _zone_submitted_at = _report_status_for_zone(r, ZONE)
     _dash_cells = int(cells0[['2G','3G','4G','5G']].apply(pd.to_numeric, errors='coerce').fillna(0).sum().sum()) if cells0 is not None and not cells0.empty else 0
@@ -2609,6 +2757,22 @@ else:
                                            qdf("SELECT zone ZONE,base BASE,intitule 'INTITULÉ',notions 'NOTIONS VUES' FROM formations WHERE report_date=? ORDER BY zone", (r,)), \
                                            qdf("SELECT zone ZONE,entite ENTITÉ,matricule MATRICULE,nom NOM,prenoms PRÉNOMS,fonction FONCTION,niveau 'NIVEAU HIÉRARCHIQUE',contrat 'NATURE CONTRAT',contact CONTACT,role_garde 'RÔLE / GARDE' FROM planning WHERE report_date=? ORDER BY zone", (r,))
 
+    _sup_nav_options = ["✨ Actualités opérationnelles", "📄 Problématiques", "📅 Week-ends", "🗓️ Planning secteurs"]
+    _sup_default = st.session_state.get("sup_nav", _sup_nav_options[0])
+    if _sup_default not in _sup_nav_options:
+        _sup_default = _sup_nav_options[0]
+    with st.container(key="mobile_supervisor_navigation"):
+        st.markdown('<div class="mobile-nav-title">NAVIGATION • SUPERVISEUR</div><div class="mobile-nav-box">', unsafe_allow_html=True)
+        st.selectbox(
+            "Menu",
+            _sup_nav_options,
+            index=_sup_nav_options.index(_sup_default),
+            key="sup_menu_mobile",
+            on_change=_sync_supervisor_navigation,
+            label_visibility="collapsed"
+        )
+        st.markdown('</div>', unsafe_allow_html=True)
+
     submitted = rep.ZONE.tolist() if not rep.empty else []
     missing = [z for z in ZONES if z not in submitted]
 
@@ -2632,39 +2796,17 @@ else:
     </div>
     <div class="sidebar-section-label">Navigation • Superviseur</div>
     """, unsafe_allow_html=True)
-    sup_options = ["✨ Actualités opérationnelles", "📄 Problématiques", "📅 Week-ends", "🗓️ Planning secteurs"]
-
-    def _sync_sup_desktop():
-        st.session_state["sup_menu_active"] = st.session_state["sup_menu"]
-
-    if "sup_menu_active" not in st.session_state:
-        st.session_state["sup_menu_active"] = sup_options[0]
-
-    st.sidebar.radio(
+    _sup_sidebar_options = _sup_nav_options
+    _sup_sidebar_default = st.session_state.get("sup_nav", _sup_nav_options[0])
+    sup_menu_sidebar = st.sidebar.radio(
         "Sous-menus",
-        sup_options,
-        key="sup_menu",
-        label_visibility="collapsed",
-        on_change=_sync_sup_desktop
+        _sup_sidebar_options,
+        index=_sup_sidebar_options.index(_sup_sidebar_default) if _sup_sidebar_default in _sup_sidebar_options else 0,
+        key="sup_menu_sidebar",
+        on_change=_sync_supervisor_navigation,
+        label_visibility="collapsed"
     )
-
-    sup_mobile_labels = ["✨ Actualités", "📄 Problèmes", "📅 Week-ends", "🗓️ Planning"]
-    _sup_reverse = dict(zip(sup_mobile_labels, sup_options))
-
-    def _sync_sup_mobile_label():
-        st.session_state["sup_menu_active"] = _sup_reverse[st.session_state["sup_menu_mobile_label"]]
-
-    if "sup_menu_mobile_label" not in st.session_state:
-        st.session_state["sup_menu_mobile_label"] = sup_mobile_labels[0]
-
-    st.radio(
-        "Navigation mobile",
-        sup_mobile_labels,
-        key="sup_menu_mobile_label",
-        label_visibility="collapsed",
-        on_change=_sync_sup_mobile_label
-    )
-    sup_menu = st.session_state["sup_menu_active"]
+    sup_menu = st.session_state.get("sup_nav", sup_menu_sidebar)
     st.sidebar.markdown(f'''
     <div class="sidebar-user-card">
       👤 <strong>SUPERVISEUR GÉNÉRAL</strong><br>
