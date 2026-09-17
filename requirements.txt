@@ -1,0 +1,8 @@
+base64
+streamlit
+pandas
+sqlite3
+calendar
+html
+hashlib
+mimetypes
