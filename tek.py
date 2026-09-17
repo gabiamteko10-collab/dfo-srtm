@@ -2085,6 +2085,22 @@ _SUP_NAV_OPTIONS = [
     "📈 Analyse & synthèse",
 ]
 
+def _sync_zone_navigation():
+    """Synchronise le choix de la sidebar avec l'état partagé de navigation."""
+    value = st.session_state.get("zone_menu_sidebar")
+    if value in _ZONE_NAV_OPTIONS:
+        st.session_state["zone_nav"] = value
+
+
+def _sync_supervisor_navigation():
+    """Synchronise le choix superviseur avec l'état partagé de navigation."""
+    value = st.session_state.get("sup_menu_sidebar")
+    if value in _SUP_NAV_OPTIONS:
+        st.session_state["sup_nav"] = value
+    elif st.session_state.get("sup_menu_mobile") in _SUP_NAV_OPTIONS:
+        st.session_state["sup_nav"] = st.session_state["sup_menu_mobile"]
+
+
 def _set_mobile_nav(value, role):
     key = "zone_nav" if role == "ZONE" else "sup_nav"
     st.session_state[key] = value
