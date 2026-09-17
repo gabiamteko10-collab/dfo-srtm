@@ -932,6 +932,12 @@ st.markdown("""
         max-width: 300px !important;
     }
 
+    /* Navigation mobile : cachée sur desktop */
+    .st-key-mobile_zone_navigation,
+    .st-key-mobile_supervisor_navigation {
+        display: none !important;
+    }
+
     /* =========================================================
        AFFICHAGE MOBILE : MENU EN HAUT, JAMAIS PAR-DESSUS LE CONTENU
        Sur téléphone, Streamlit positionne normalement la sidebar en
@@ -939,40 +945,44 @@ st.markdown("""
        restent accessibles juste en dessous.
        ========================================================= */
     @media (max-width: 768px) {
-        /* Sidebar dans le flux de la page */
+        /* Sur téléphone, la sidebar native est masquée :
+           elle est remplacée par une navigation compacte dans la page.
+           Cela évite tout recouvrement du contenu principal. */
         section[data-testid="stSidebar"] {
-            position: relative !important;
-            top: auto !important;
-            bottom: auto !important;
-            left: auto !important;
-            right: auto !important;
-            width: 100% !important;
-            min-width: 100% !important;
-            max-width: 100% !important;
-            height: auto !important;
-            min-height: 0 !important;
-            max-height: none !important;
-            transform: none !important;
-            z-index: 10 !important;
-            overflow: visible !important;
-            box-shadow: none !important;
-        }
-
-        section[data-testid="stSidebar"] > div {
-            width: 100% !important;
+            display: none !important;
+            visibility: hidden !important;
+            width: 0 !important;
             min-width: 0 !important;
-            max-width: none !important;
-            height: auto !important;
-            min-height: 0 !important;
-            max-height: none !important;
-            overflow: visible !important;
-            padding: .65rem .7rem 1rem .7rem !important;
+            max-width: 0 !important;
+            transform: none !important;
         }
 
-        section[data-testid="stSidebar"] .block-container {
+        /* Navigation mobile affichée dans le contenu principal */
+        .st-key-mobile_zone_navigation,
+        .st-key-mobile_supervisor_navigation {
+            display: block !important;
             width: 100% !important;
-            max-width: none !important;
-            padding: .25rem 0 .75rem 0 !important;
+            margin: 0 0 1rem 0 !important;
+            padding: 0 !important;
+        }
+
+        .mobile-nav-title {
+            font-size: 11px !important;
+            font-weight: 900 !important;
+            letter-spacing: 1.5px !important;
+            margin: 0 0 6px 2px !important;
+        }
+
+        .mobile-nav-box {
+            background: rgba(8, 48, 78, .96) !important;
+            border: 1px solid rgba(0, 229, 212, .45) !important;
+            border-radius: 14px !important;
+            padding: 9px 10px 4px 10px !important;
+            box-shadow: 0 4px 14px rgba(0,0,0,.18) !important;
+        }
+
+        .mobile-nav-box [data-testid="stSelectbox"] {
+            margin-bottom: 0 !important;
         }
 
         /* Le contenu principal reprend toute la largeur et passe sous le menu */
@@ -1943,8 +1953,36 @@ def _render_supervisor_status_dashboard(report_date):
     st.markdown('<div class="section-title">🏠 SUIVI DES RAPPORTS PAR ZONE</div>', unsafe_allow_html=True)
     st.dataframe(status_df, use_container_width=True, hide_index=True)
 
+# --- NAVIGATION MOBILE ---
+# Sur téléphone, la sidebar Streamlit est volontairement masquée.
+# Ces sélecteurs permettent de naviguer sans cacher les informations de la page.
+def _sync_zone_navigation():
+    value = st.session_state.get("zone_menu_mobile", st.session_state.get("zone_menu_sidebar", "🚨 Rapport du jour"))
+    st.session_state["zone_nav"] = value
+    st.session_state["zone_menu_sidebar"] = value
+
+def _sync_supervisor_navigation():
+    value = st.session_state.get("sup_menu_mobile", st.session_state.get("sup_menu_sidebar", "✨ Actualités opérationnelles"))
+    st.session_state["sup_nav"] = value
+    st.session_state["sup_menu_sidebar"] = value
+
 # --- MODE ZONE ---
 if ROLE == 'ZONE':
+    _zone_nav_options = ["🚨 Rapport du jour", "🗓️ Planning", "🧠 Rex & Formations", "🚀 Vérifier & Soumettre"]
+    _zone_default = st.session_state.get("zone_nav", _zone_nav_options[0])
+    if _zone_default not in _zone_nav_options:
+        _zone_default = _zone_nav_options[0]
+    with st.container(key="mobile_zone_navigation"):
+        st.markdown('<div class="mobile-nav-title">NAVIGATION • ZONE</div><div class="mobile-nav-box">', unsafe_allow_html=True)
+        st.selectbox(
+            "Menu",
+            _zone_nav_options,
+            index=_zone_nav_options.index(_zone_default),
+            key="zone_menu_mobile",
+            on_change=_sync_zone_navigation,
+            label_visibility="collapsed"
+        )
+        st.markdown('</div>', unsafe_allow_html=True)
     diff, cells0, dr0, ins0, deg0, forms0, plan0 = load(r, ZONE)
     _copied = st.session_state.get('copy_previous_data')
     if _copied and _copied.get('date') == r:
@@ -1969,12 +2007,17 @@ if ROLE == 'ZONE':
     </div>
     <div class="sidebar-section-label">Navigation • Zone</div>
     """, unsafe_allow_html=True)
-    zone_menu = st.sidebar.radio(
+    _zone_sidebar_options = _zone_nav_options
+    _zone_sidebar_default = st.session_state.get("zone_nav", _zone_nav_options[0])
+    zone_menu_sidebar = st.sidebar.radio(
         "Sous-menus",
-        ["🚨 Rapport du jour", "🗓️ Planning", "🧠 Rex & Formations", "🚀 Vérifier & Soumettre"],
-        key="zone_menu",
+        _zone_sidebar_options,
+        index=_zone_sidebar_options.index(_zone_sidebar_default) if _zone_sidebar_default in _zone_sidebar_options else 0,
+        key="zone_menu_sidebar",
+        on_change=_sync_zone_navigation,
         label_visibility="collapsed"
     )
+    zone_menu = st.session_state.get("zone_nav", zone_menu_sidebar)
     # Tableau de bord intégré directement dans le carré « ESPACE ZONE ».
     _zone_status, _zone_submitted_at = _report_status_for_zone(r, ZONE)
     _dash_cells = int(cells0[['2G','3G','4G','5G']].apply(pd.to_numeric, errors='coerce').fillna(0).sum().sum()) if cells0 is not None and not cells0.empty else 0
@@ -2567,6 +2610,22 @@ else:
                                            qdf("SELECT zone ZONE,base BASE,intitule 'INTITULÉ',notions 'NOTIONS VUES' FROM formations WHERE report_date=? ORDER BY zone", (r,)), \
                                            qdf("SELECT zone ZONE,entite ENTITÉ,matricule MATRICULE,nom NOM,prenoms PRÉNOMS,fonction FONCTION,niveau 'NIVEAU HIÉRARCHIQUE',contrat 'NATURE CONTRAT',contact CONTACT,role_garde 'RÔLE / GARDE' FROM planning WHERE report_date=? ORDER BY zone", (r,))
 
+    _sup_nav_options = ["✨ Actualités opérationnelles", "📄 Problématiques", "📅 Week-ends", "🗓️ Planning secteurs"]
+    _sup_default = st.session_state.get("sup_nav", _sup_nav_options[0])
+    if _sup_default not in _sup_nav_options:
+        _sup_default = _sup_nav_options[0]
+    with st.container(key="mobile_supervisor_navigation"):
+        st.markdown('<div class="mobile-nav-title">NAVIGATION • SUPERVISEUR</div><div class="mobile-nav-box">', unsafe_allow_html=True)
+        st.selectbox(
+            "Menu",
+            _sup_nav_options,
+            index=_sup_nav_options.index(_sup_default),
+            key="sup_menu_mobile",
+            on_change=_sync_supervisor_navigation,
+            label_visibility="collapsed"
+        )
+        st.markdown('</div>', unsafe_allow_html=True)
+
     submitted = rep.ZONE.tolist() if not rep.empty else []
     missing = [z for z in ZONES if z not in submitted]
 
@@ -2590,12 +2649,17 @@ else:
     </div>
     <div class="sidebar-section-label">Navigation • Superviseur</div>
     """, unsafe_allow_html=True)
-    sup_menu = st.sidebar.radio(
+    _sup_sidebar_options = _sup_nav_options
+    _sup_sidebar_default = st.session_state.get("sup_nav", _sup_nav_options[0])
+    sup_menu_sidebar = st.sidebar.radio(
         "Sous-menus",
-        ["✨ Actualités opérationnelles", "📄 Problématiques", "📅 Week-ends", "🗓️ Planning secteurs"],
-        key="sup_menu",
+        _sup_sidebar_options,
+        index=_sup_sidebar_options.index(_sup_sidebar_default) if _sup_sidebar_default in _sup_sidebar_options else 0,
+        key="sup_menu_sidebar",
+        on_change=_sync_supervisor_navigation,
         label_visibility="collapsed"
     )
+    sup_menu = st.session_state.get("sup_nav", sup_menu_sidebar)
     st.sidebar.markdown(f'''
     <div class="sidebar-user-card">
       👤 <strong>SUPERVISEUR GÉNÉRAL</strong><br>
