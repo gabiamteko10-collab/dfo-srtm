@@ -155,7 +155,7 @@ st.set_page_config(
     page_title='Yas DFO-SRTM – Hub Opérationnel Maritime', 
     page_icon='📡', 
     layout='wide',
-    initial_sidebar_state='auto'
+    initial_sidebar_state='collapsed'
 )
 
 # --- LOGO : recherche robuste (script + ancien chemin Windows) ---
@@ -933,6 +933,46 @@ st.markdown("""
             margin: 18px auto 12px auto !important;
             padding: 24px 16px !important;
             border-radius: 18px !important;
+        }
+
+        /* Menu mobile : bouton hamburger fixe à gauche */
+        button[data-testid="stSidebarCollapsedControl"] {
+            position: fixed !important;
+            left: 10px !important;
+            top: 10px !important;
+            z-index: 999999 !important;
+            width: 44px !important;
+            height: 44px !important;
+            min-width: 44px !important;
+            border-radius: 12px !important;
+            background: rgba(10, 25, 35, .94) !important;
+            border: 1px solid rgba(0, 229, 212, .45) !important;
+            box-shadow: 0 6px 18px rgba(0,0,0,.28) !important;
+            padding: 0 !important;
+        }
+        button[data-testid="stSidebarCollapsedControl"] svg {
+            display: none !important;
+        }
+        button[data-testid="stSidebarCollapsedControl"]::before {
+            content: "☰";
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            width: 100% !important;
+            height: 100% !important;
+            color: #00E5D4 !important;
+            font-size: 23px !important;
+            line-height: 1 !important;
+            font-weight: 900 !important;
+        }
+        button[data-testid="stSidebarCollapsedControl"]:hover {
+            background: rgba(0, 229, 212, .16) !important;
+            border-color: #00E5D4 !important;
+        }
+
+        /* Décale légèrement le contenu pour laisser respirer le hamburger */
+        .main .block-container {
+            padding-top: 4.2rem !important;
         }
 
         /* Sidebar plus compacte lorsqu'elle est ouverte sur mobile */
