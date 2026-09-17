@@ -919,7 +919,7 @@ st.markdown("""
         border: 0 !important;
     }
 
-    /* Empêcher la sidebar de partir vers la gauche */
+    /* Empêcher la sidebar de partir vers la gauche sur ordinateur */
     section[data-testid="stSidebar"],
     section[data-testid="stSidebar"][aria-expanded="false"] {
         display: block !important;
@@ -930,6 +930,82 @@ st.markdown("""
         width: 300px !important;
         min-width: 300px !important;
         max-width: 300px !important;
+    }
+
+    /* =========================================================
+       AFFICHAGE MOBILE : MENU EN HAUT, JAMAIS PAR-DESSUS LE CONTENU
+       Sur téléphone, Streamlit positionne normalement la sidebar en
+       overlay. On la remet dans le flux pour que les informations
+       restent accessibles juste en dessous.
+       ========================================================= */
+    @media (max-width: 768px) {
+        /* Sidebar dans le flux de la page */
+        section[data-testid="stSidebar"] {
+            position: relative !important;
+            top: auto !important;
+            bottom: auto !important;
+            left: auto !important;
+            right: auto !important;
+            width: 100% !important;
+            min-width: 100% !important;
+            max-width: 100% !important;
+            height: auto !important;
+            min-height: 0 !important;
+            max-height: none !important;
+            transform: none !important;
+            z-index: 10 !important;
+            overflow: visible !important;
+            box-shadow: none !important;
+        }
+
+        section[data-testid="stSidebar"] > div {
+            width: 100% !important;
+            min-width: 0 !important;
+            max-width: none !important;
+            height: auto !important;
+            min-height: 0 !important;
+            max-height: none !important;
+            overflow: visible !important;
+            padding: .65rem .7rem 1rem .7rem !important;
+        }
+
+        section[data-testid="stSidebar"] .block-container {
+            width: 100% !important;
+            max-width: none !important;
+            padding: .25rem 0 .75rem 0 !important;
+        }
+
+        /* Le contenu principal reprend toute la largeur et passe sous le menu */
+        [data-testid="stAppViewContainer"],
+        [data-testid="stAppViewContainer"] > .main,
+        [data-testid="stMain"] {
+            width: 100% !important;
+            max-width: 100% !important;
+            margin-left: 0 !important;
+            padding-left: 0 !important;
+        }
+
+        [data-testid="stAppViewContainer"] .main .block-container {
+            width: 100% !important;
+            max-width: 100% !important;
+            padding-left: .75rem !important;
+            padding-right: .75rem !important;
+            padding-top: .75rem !important;
+        }
+
+        /* Évite que les cartes du menu deviennent trop larges */
+        .sidebar-brand,
+        .sidebar-user-card,
+        .zone-space-card {
+            width: 100% !important;
+            box-sizing: border-box !important;
+        }
+
+        /* Navigation plus compacte sur petit écran */
+        section[data-testid="stSidebar"] div[role="radiogroup"] > label {
+            min-height: 42px !important;
+            padding: 9px 10px !important;
+        }
     }
 
 </style>
