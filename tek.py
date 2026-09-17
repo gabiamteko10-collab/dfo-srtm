@@ -936,19 +936,24 @@ st.markdown("""
         }
 
         /* Menu mobile : bouton hamburger fixe à gauche */
-        button[data-testid="stSidebarCollapsedControl"] {
+        button[data-testid="stSidebarCollapsedControl"],
+        button[aria-label*="sidebar" i][aria-expanded="false"] {
             position: fixed !important;
             left: 10px !important;
             top: 10px !important;
             z-index: 999999 !important;
-            width: 44px !important;
-            height: 44px !important;
-            min-width: 44px !important;
-            border-radius: 12px !important;
-            background: rgba(10, 25, 35, .94) !important;
-            border: 1px solid rgba(0, 229, 212, .45) !important;
-            box-shadow: 0 6px 18px rgba(0,0,0,.28) !important;
+            width: 46px !important;
+            height: 46px !important;
+            min-width: 46px !important;
+            min-height: 46px !important;
+            border-radius: 13px !important;
+            background: rgba(10, 25, 35, .96) !important;
+            border: 1px solid rgba(0, 229, 212, .55) !important;
+            box-shadow: 0 6px 20px rgba(0,0,0,.32) !important;
             padding: 0 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
         }
         button[data-testid="stSidebarCollapsedControl"] svg {
             display: none !important;
