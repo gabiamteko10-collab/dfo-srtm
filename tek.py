@@ -155,7 +155,7 @@ st.set_page_config(
     page_title='Yas DFO-SRTM – Hub Opérationnel Maritime', 
     page_icon='📡', 
     layout='wide',
-    initial_sidebar_state='expanded'
+    initial_sidebar_state='auto'
 )
 
 # --- LOGO : recherche robuste (script + ancien chemin Windows) ---
@@ -741,6 +741,229 @@ st.markdown("""
         border-radius: 10px !important;
         font-weight: 800 !important;
         min-height: 42px !important;
+    }
+
+
+    /* ============================================================
+       MODE MOBILE — interface tactile et responsive
+       ============================================================ */
+    @media (max-width: 768px) {
+        .main .block-container {
+            padding: 0.75rem 0.65rem 2rem 0.65rem !important;
+            max-width: 100% !important;
+        }
+
+        /* En-tête compact */
+        .header-banner {
+            padding: 14px 15px !important;
+            border-radius: 14px !important;
+            margin-bottom: 14px !important;
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            gap: 10px !important;
+        }
+        .header-title-box {
+            gap: 10px !important;
+            width: 100% !important;
+        }
+        .header-title {
+            font-size: 18px !important;
+            line-height: 1.2 !important;
+        }
+        .header-subtitle {
+            font-size: 10px !important;
+            line-height: 1.35 !important;
+        }
+        .role-badge {
+            align-self: flex-start !important;
+            padding: 7px 11px !important;
+            font-size: 10px !important;
+        }
+
+        /* Titres et cartes */
+        .section-title {
+            font-size: 14px !important;
+            margin-bottom: 11px !important;
+        }
+        .page-intro, .quick-help, .welcome-strip, .ops-hero {
+            padding: 10px 11px !important;
+            margin-bottom: 12px !important;
+            border-radius: 11px !important;
+        }
+        .page-intro-title { font-size: 13px !important; }
+        .page-intro-text { font-size: 11px !important; }
+
+        /* Toutes les colonnes passent proprement en pleine largeur.
+           Cela évite les champs écrasés et les boutons minuscules. */
+        div[data-testid="stHorizontalBlock"] {
+            flex-wrap: wrap !important;
+            gap: 0.55rem !important;
+        }
+        div[data-testid="stHorizontalBlock"] > div[data-testid="column"] {
+            flex: 1 1 100% !important;
+            width: 100% !important;
+            min-width: 100% !important;
+        }
+
+        /* KPI */
+        div[data-testid="stMetric"] {
+            padding: 11px 13px !important;
+            border-radius: 12px !important;
+            margin-bottom: 3px !important;
+        }
+        div[data-testid="stMetricLabel"] {
+            font-size: 10px !important;
+        }
+        div[data-testid="stMetricValue"] {
+            font-size: 23px !important;
+        }
+
+        /* Champs tactiles */
+        .stButton > button,
+        .stDownloadButton > button,
+        button[data-testid="stBaseButton-secondary"],
+        button[data-testid="stBaseButton-primary"] {
+            width: 100% !important;
+            min-height: 46px !important;
+            padding: 10px 13px !important;
+            font-size: 12px !important;
+        }
+        input, textarea, [data-baseweb="select"] {
+            font-size: 16px !important;
+        }
+        .stTextInput input,
+        .stNumberInput input,
+        .stTextArea textarea {
+            min-height: 44px !important;
+        }
+
+        /* Onglets : défilement horizontal plutôt que boutons écrasés */
+        .stTabs [data-baseweb="tab-list"] {
+            gap: 6px !important;
+            overflow-x: auto !important;
+            flex-wrap: nowrap !important;
+            scrollbar-width: thin;
+            padding-bottom: 7px !important;
+        }
+        .stTabs [data-baseweb="tab"] {
+            flex: 0 0 auto !important;
+            white-space: nowrap !important;
+            padding: 9px 13px !important;
+            font-size: 11px !important;
+        }
+
+        /* Tableaux larges : conservation du contenu avec défilement */
+        div[data-testid="stDataEditor"],
+        div[data-testid="stDataFrame"] {
+            max-width: 100% !important;
+            overflow-x: auto !important;
+            -webkit-overflow-scrolling: touch !important;
+        }
+        .planning-card {
+            padding: 9px !important;
+            border-radius: 12px !important;
+        }
+        .planning-header {
+            font-size: 16px !important;
+            padding: 10px 12px !important;
+        }
+        .planning-legend {
+            font-size: 10px !important;
+            overflow-x: auto !important;
+            white-space: nowrap !important;
+            flex-wrap: nowrap !important;
+        }
+
+        /* Synthèse journalière */
+        .daily-report-header {
+            padding: 11px 12px !important;
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            gap: 8px !important;
+        }
+        .daily-report-title {
+            font-size: 16px !important;
+        }
+        .daily-report-date {
+            min-width: 0 !important;
+            width: 100% !important;
+            box-sizing: border-box !important;
+            padding: 6px 10px !important;
+        }
+        .daily-section-title {
+            font-size: 13px !important;
+            padding: 8px 10px !important;
+            margin-top: 12px !important;
+        }
+        .daily-report-table {
+            font-size: 10px !important;
+            min-width: 650px !important;
+        }
+        .daily-report {
+            overflow-x: auto !important;
+            -webkit-overflow-scrolling: touch !important;
+        }
+        .daily-report-summary {
+            flex-wrap: wrap !important;
+            gap: 7px !important;
+        }
+        .summary-card {
+            flex: 1 1 100px !important;
+            min-width: 0 !important;
+            padding: 7px 10px !important;
+        }
+
+        /* Galerie REX : vignettes plus lisibles sur petit écran */
+        .zone-space-card {
+            margin: 10px 0 7px 0 !important;
+            padding: 11px !important;
+            border-radius: 14px !important;
+        }
+        .zone-space-title { font-size: 11px !important; }
+        .zone-space-subtitle { font-size: 9px !important; }
+        .zone-kpi {
+            padding: 7px 5px !important;
+        }
+
+        /* Connexion */
+        .login-wrapper {
+            max-width: none !important;
+            width: 100% !important;
+            box-sizing: border-box !important;
+            margin: 18px auto 12px auto !important;
+            padding: 24px 16px !important;
+            border-radius: 18px !important;
+        }
+
+        /* Sidebar plus compacte lorsqu'elle est ouverte sur mobile */
+        section[data-testid="stSidebar"] > div {
+            padding: 0.7rem 0.65rem 1rem 0.65rem !important;
+        }
+        .sidebar-brand {
+            padding: 12px 10px !important;
+            margin-bottom: 12px !important;
+            border-radius: 14px !important;
+        }
+        .sidebar-brand .brand-icon { font-size: 22px !important; }
+        .sidebar-brand .brand-title { font-size: 13px !important; }
+        section[data-testid="stSidebar"] div[role="radiogroup"] > label {
+            min-height: 48px !important;
+            padding: 11px 10px !important;
+        }
+        section[data-testid="stSidebar"] div[role="radiogroup"] > label p {
+            font-size: 11px !important;
+        }
+    }
+
+    /* Très petits écrans */
+    @media (max-width: 380px) {
+        .main .block-container {
+            padding-left: 0.45rem !important;
+            padding-right: 0.45rem !important;
+        }
+        .header-title { font-size: 16px !important; }
+        .section-title { font-size: 13px !important; }
+        .daily-report-table { font-size: 9px !important; }
     }
 
     /* --- Synthèse journalière inspirée du modèle fourni --- */
