@@ -1,6 +1,2 @@
 streamlit
 pandas
-calendar
-html
-hashlib
-mimetypes
