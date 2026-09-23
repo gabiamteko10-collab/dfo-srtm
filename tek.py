@@ -2049,7 +2049,7 @@ if ROLE == 'ZONE':
     """, unsafe_allow_html=True)
     zone_menu = st.sidebar.radio(
         "Sous-menus",
-        ["🚨 Rapport du jour", "🗓️ Planning", "🧠 Rex & Formations", "🚀 Vérifier & Soumettre"],
+        ["🚨 Rapport du jour", "🗓️ Planning", "🧠 Formations polyvalentes ", "🚀 Vérifier & Soumettre"],
         key="zone_menu_desktop",
         label_visibility="collapsed",
         on_change=_desktop_zone_navigation_changed
