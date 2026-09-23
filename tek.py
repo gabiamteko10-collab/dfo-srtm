@@ -2117,6 +2117,59 @@ if ROLE == 'ZONE':
         value = st.session_state.get(name)
         return value.copy() if isinstance(value, pd.DataFrame) else fallback.copy()
 
+    def _sync_data_editor(widget_key, data_key):
+        """Synchronise immédiatement les modifications d'un st.data_editor.
+
+        Streamlit peut déclencher le rerun avant que le DataFrame retourné ne soit
+        réutilisé par le menu suivant. Le callback lit donc directement l'état
+        natif du widget (edited_rows / added_rows / deleted_rows) et le fusionne
+        dans le brouillon persistant. Cela évite de devoir saisir une donnée une
+        deuxième fois, notamment dans les lignes nouvellement ajoutées.
+        """
+        base = st.session_state.get(data_key)
+        if not isinstance(base, pd.DataFrame):
+            base = pd.DataFrame()
+        else:
+            base = base.copy()
+
+        state = st.session_state.get(widget_key)
+        if isinstance(state, dict):
+            # Modifications de cellules existantes.
+            for row_idx, changes in state.get('edited_rows', {}).items():
+                try:
+                    row_idx = int(row_idx)
+                except (TypeError, ValueError):
+                    continue
+                if 0 <= row_idx < len(base):
+                    for col, value in changes.items():
+                        if col not in base.columns:
+                            base[col] = ''
+                        base.at[base.index[row_idx], col] = value
+
+            # Nouvelles lignes saisies dans num_rows='dynamic'.
+            for row in state.get('added_rows', []):
+                if isinstance(row, dict):
+                    new_row = {col: '' for col in base.columns}
+                    new_row.update(row)
+                    base = pd.concat([base, pd.DataFrame([new_row])], ignore_index=True)
+
+            # Lignes supprimées.
+            deleted = state.get('deleted_rows', [])
+            if deleted:
+                valid_deleted = []
+                for idx in deleted:
+                    try:
+                        idx = int(idx)
+                    except (TypeError, ValueError):
+                        continue
+                    if 0 <= idx < len(base):
+                        valid_deleted.append(idx)
+                if valid_deleted:
+                    base = base.drop(base.index[valid_deleted]).reset_index(drop=True)
+
+        st.session_state[data_key] = base.copy()
+
+
     cells = _stored_df('cells_data', cells0)
     dr = _stored_df('dr_data', dr0)
     ins = _stored_df('ins_data', ins0)
@@ -2158,12 +2211,21 @@ if ROLE == 'ZONE':
                 '4G': st.column_config.NumberColumn(min_value=0, step=1),
                 '5G': st.column_config.NumberColumn(min_value=0, step=1),
                 'STATUT': st.column_config.SelectboxColumn(options=STATUS_DISPLAY, required=False)
-            }, key=f'cells_editor_{_draft_context_id}'
+            }, key=f'cells_editor_{_draft_context_id}',
+            on_change=_sync_data_editor, args=(f'cells_editor_{_draft_context_id}', 'cells_data')
         )
         if 'STATUT' in cells.columns:
             cells['STATUT'] = cells['STATUT'].replace({'🟢 UP': 'UP', '🔴 DOWN': 'DOWN'})
         st.session_state['cells_data'] = cells.copy()
-        total = int(cells[['2G','3G','4G','5G']].fillna(0).sum().sum()) if not cells.empty else 0
+        if not cells.empty:
+            # Les cellules ajoutées dans data_editor peuvent être vides ("").
+            # On convertit proprement les colonnes numériques avant le calcul.
+            for _col in ['2G', '3G', '4G', '5G']:
+                if _col in cells.columns:
+                    cells[_col] = pd.to_numeric(cells[_col], errors='coerce').fillna(0)
+            total = int(cells[['2G','3G','4G','5G']].sum().sum())
+        else:
+            total = 0
 
         st.metric('TOTAL CELLS DOWN', total)
 
@@ -2186,7 +2248,8 @@ if ROLE == 'ZONE':
                 # ÉVITABLE ? : uniquement OUI / NON
                 'ÉVITABLE ?': st.column_config.SelectboxColumn(options=YESNO),
                 'STATUT': st.column_config.SelectboxColumn(options=STATUS_DISPLAY, required=False)
-            }, key=f'dr_editor_{_draft_context_id}'
+            }, key=f'dr_editor_{_draft_context_id}',
+            on_change=_sync_data_editor, args=(f'dr_editor_{_draft_context_id}', 'dr_data')
         )
         if 'STATUT' in dr.columns:
             dr['STATUT'] = dr['STATUT'].replace({'🟢 UP': 'UP', '🔴 DOWN': 'DOWN'})
@@ -2206,11 +2269,11 @@ if ROLE == 'ZONE':
         st.session_state['diff_data'] = difficulties or ''
 
         st.markdown('<div class="section-title" style="margin-top:20px;">⚙️ 4. INSTANCES — suivi opérationnel</div>', unsafe_allow_html=True)
-        ins = st.data_editor(ins, num_rows='dynamic', use_container_width=True, hide_index=True, key=f'ins_editor_{_draft_context_id}')
+        ins = st.data_editor(ins, num_rows='dynamic', use_container_width=True, hide_index=True, key=f'ins_editor_{_draft_context_id}', on_change=_sync_data_editor, args=(f'ins_editor_{_draft_context_id}', 'ins_data'))
         st.session_state['ins_data'] = ins.copy()
 
         st.markdown('<div class="section-title" style="margin-top:20px;">📉 5. SITES DÉGRADÉS — qualité réseau</div>', unsafe_allow_html=True)
-        deg = st.data_editor(deg if not deg.empty else pd.DataFrame(columns=['SITE NAME','2G','3G','4G','DISPONIBILITÉ','BASE']), num_rows='dynamic', use_container_width=True, hide_index=True, key=f'deg_editor_{_draft_context_id}')
+        deg = st.data_editor(deg if not deg.empty else pd.DataFrame(columns=['SITE NAME','2G','3G','4G','DISPONIBILITÉ','BASE']), num_rows='dynamic', use_container_width=True, hide_index=True, key=f'deg_editor_{_draft_context_id}', on_change=_sync_data_editor, args=(f'deg_editor_{_draft_context_id}', 'deg_data'))
         st.session_state['deg_data'] = deg.copy()
 
         render_daily_synthesis(r, zone=ZONE)
@@ -2258,7 +2321,8 @@ if ROLE == 'ZONE':
                 'NUIT': st.column_config.SelectboxColumn('NUIT', options=WEEKEND_SHIFT_OPTIONS, width='small'),
                 'ASTREINTE': st.column_config.SelectboxColumn('ASTREINTE', options=WEEKEND_SHIFT_OPTIONS, width='small'),
             },
-            key=f'editor_{weekend_key}'
+            key=f'editor_{weekend_key}',
+            on_change=_sync_data_editor, args=(f'editor_{weekend_key}', weekend_key)
         )
 
         # On réinjecte les 5 colonnes affichées dans la structure complète
@@ -2420,7 +2484,7 @@ if ROLE == 'ZONE':
         st.markdown('<div class="section-title">🧠 PARTAGE D\'EXPÉRIENCE & SESSIONS</div>', unsafe_allow_html=True)
 
         st.markdown('### 📝 Retour d’expérience / Formation')
-        forms = st.data_editor(forms, num_rows='dynamic', use_container_width=True, hide_index=True, key=f'forms_editor_{_draft_context_id}')
+        forms = st.data_editor(forms, num_rows='dynamic', use_container_width=True, hide_index=True, key=f'forms_editor_{_draft_context_id}', on_change=_sync_data_editor, args=(f'forms_editor_{_draft_context_id}', 'forms_data'))
         st.session_state['forms_data'] = forms.copy()
 
         st.markdown('### 📸🎥 Photos & vidéos du retour d’expérience')
