@@ -2359,7 +2359,7 @@ if ROLE == 'ZONE':
 
         st.markdown('</div>', unsafe_allow_html=True)
 
-    elif zone_menu == "🧠 Rex & Formations":
+    elif zone_menu == "🧠 Formations polyvalentes ":
         st.markdown('<div class="section-title">🧠 PARTAGE D\'EXPÉRIENCE & SESSIONS</div>', unsafe_allow_html=True)
 
         st.markdown('### 📝 Retour d’expérience / Formation')
