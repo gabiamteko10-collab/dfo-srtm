@@ -1056,6 +1056,39 @@ ROLES_SHORT = ['PJ', 'PN', 'A', 'C', 'Repos', 'SN']
 WEEKEND_TYPES = ['TECHNICIEN', 'CHAUFFEUR']
 WEEKEND_SHIFT_OPTIONS = ['', 'PJ', 'PN', 'A']
 
+
+def _safe_int(value, default=0):
+    """Conversion entière robuste pour les valeurs saisies dans les tableaux."""
+    if value is None or (isinstance(value, str) and not value.strip()):
+        return default
+    try:
+        if pd.isna(value): return default
+    except Exception:
+        pass
+    try: return int(float(str(value).strip().replace(',', '.')))
+    except (TypeError, ValueError): return default
+
+
+def _safe_float(value, default=0.0):
+    """Conversion décimale robuste pour les valeurs saisies dans les tableaux."""
+    if value is None or (isinstance(value, str) and not value.strip()):
+        return default
+    try:
+        if pd.isna(value): return default
+    except Exception:
+        pass
+    try: return float(str(value).strip().replace(',', '.'))
+    except (TypeError, ValueError): return default
+
+
+def _clean_choice(value, allowed=None, blank_legacy=False):
+    value = '' if value is None else str(value).strip()
+    if blank_legacy and value == 'À confirmer':
+        return ''
+    if allowed is not None and value not in allowed and value != '':
+        return ''
+    return value
+
 ROLES_MAPPING = {
     'PJ': 'PJ : Permanence de jour (07h-18h)',
     'PN': 'PN : Permanence de nuit (18h-07h)',
@@ -1190,8 +1223,12 @@ if not st.session_state.get('auth', False):
 USER, ROLE, ZONE = st.session_state.user, st.session_state.role, st.session_state.zone
 
 def qdf(sql, params=()):
-    c = db(); d = pd.read_sql_query(sql, c, params=params); c.close()
-    return d
+    """Lecture SQLite avec fermeture garantie de la connexion."""
+    c = db()
+    try:
+        return pd.read_sql_query(sql, c, params=params)
+    finally:
+        c.close()
 
 def get_monthly_schedule_config(year, month, zone):
     """Récupère les paramètres personnalisables de génération du mois."""
@@ -1596,7 +1633,13 @@ def save(r, z, diff, cells, dr, ins, deg, forms, plan):
     def _clean_rows(df):
         if df is None or df.empty:
             return pd.DataFrame()
-        out = df.copy().dropna(how='all')
+        out = df.copy().dropna(how='all').copy()
+        if 'DR2' in out.columns:
+            out['DR2'] = out['DR2'].map(lambda v: _clean_choice(v, YESNO, blank_legacy=True))
+        if 'ÉVITABLE ?' in out.columns:
+            out['ÉVITABLE ?'] = out['ÉVITABLE ?'].map(lambda v: _clean_choice(v, YESNO, blank_legacy=True))
+        if 'ESCALADE' in out.columns:
+            out['ESCALADE'] = out['ESCALADE'].map(lambda v: '' if str(v).strip() == 'À confirmer' else ('' if pd.isna(v) else str(v).strip()))
         return out.fillna('')
 
     cells = _clean_rows(cells)
@@ -1611,24 +1654,34 @@ def save(r, z, diff, cells, dr, ins, deg, forms, plan):
     now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     q.execute('INSERT INTO reports(report_date,zone,submitted_by,submitted_at,difficulties) VALUES(?,?,?,?,?)', (r, z, USER, now, diff))
     for x in cells.fillna('').to_dict('records'): 
-        q.execute('INSERT INTO cells_down(report_date,zone,site,g2,g3,g4,g5,observation,statut) VALUES(?,?,?,?,?,?,?,?,?)', (r, z, x.get('SITE',''), int(x.get('2G') or 0), int(x.get('3G') or 0), int(x.get('4G') or 0), int(x.get('5G') or 0), x.get('OBSERVATION',''), x.get('STATUT','')))
+        q.execute('INSERT INTO cells_down(report_date,zone,site,g2,g3,g4,g5,observation,statut) VALUES(?,?,?,?,?,?,?,?,?)', (r, z, x.get('SITE',''), _safe_int(x.get('2G')), _safe_int(x.get('3G')), _safe_int(x.get('4G')), _safe_int(x.get('5G')), x.get('OBSERVATION',''), x.get('STATUT','')))
     for x in dr.fillna('').to_dict('records'): 
         q.execute('INSERT INTO dr2(report_date,zone,site,sites_impactes,dr2,escalade,evitable,point_bloquant,statut) VALUES(?,?,?,?,?,?,?,?,?)', (r, z, x.get('SITE',''), x.get('SITES IMPACTÉS',''), x.get('DR2',''), x.get('ESCALADE',''), x.get('ÉVITABLE ?',''), x.get('POINT BLOQUANT',''), x.get('STATUT','')))
     for x in ins.fillna('').to_dict('records'): 
-        q.execute('INSERT INTO instances(report_date,zone,base,installations,derangements,points_bloquants) VALUES(?,?,?,?,?,?)', (r, z, x.get('BASES',''), int(x.get('INSTALLATIONS') or 0), int(x.get('DÉRANGEMENTS') or 0), x.get('POINTS BLOQUANTS','')))
+        q.execute('INSERT INTO instances(report_date,zone,base,installations,derangements,points_bloquants) VALUES(?,?,?,?,?,?)', (r, z, x.get('BASES',''), _safe_int(x.get('INSTALLATIONS')), _safe_int(x.get('DÉRANGEMENTS')), x.get('POINTS BLOQUANTS','')))
     for x in deg.fillna('').to_dict('records'): 
-        q.execute('INSERT INTO degraded(report_date,zone,site_name,g2,g3,g4,disponibilite,base) VALUES(?,?,?,?,?,?,?,?)', (r, z, x.get('SITE NAME',''), float(x.get('2G') or 0), float(x.get('3G') or 0), float(x.get('4G') or 0), float(x.get('DISPONIBILITÉ') or 0), x.get('BASE','')))
+        q.execute('INSERT INTO degraded(report_date,zone,site_name,g2,g3,g4,disponibilite,base) VALUES(?,?,?,?,?,?,?,?)', (r, z, x.get('SITE NAME',''), _safe_float(x.get('2G')), _safe_float(x.get('3G')), _safe_float(x.get('4G')), _safe_float(x.get('DISPONIBILITÉ')), x.get('BASE','')))
     for x in forms.fillna('').to_dict('records'): 
         q.execute('INSERT INTO formations(report_date,zone,base,intitule,notions) VALUES(?,?,?,?,?)', (r, z, x.get('BASE',''), x.get('INTITULÉ',''), x.get('NOTIONS VUES','')))
     for x in plan.fillna('').to_dict('records'):
         q.execute('INSERT INTO planning(report_date,zone,entite,matricule,nom,prenoms,fonction,niveau,contrat,contact,role_garde) VALUES(?,?,?,?,?,?,?,?,?,?,?)', 
                   (r, z, x.get('ENTITÉ',''), x.get('MATRICULE',''), x.get('NOM',''), x.get('PRÉNOMS',''), x.get('FONCTION',''), x.get('NIVEAU HIÉRARCHIQUE',''), x.get('NATURE CONTRAT',''), x.get('CONTACT',''), x.get('RÔLE / GARDE','')))
-    c.commit(); c.close()
+    try:
+        c.commit()
+    except Exception:
+        c.rollback()
+        raise
+    finally:
+        c.close()
 
 def load(r, z):
     diff = qdf('SELECT difficulties FROM reports WHERE report_date=? AND zone=?', (r, z))
     cells = qdf("SELECT site SITE,g2 '2G',g3 '3G',g4 '4G',g5 '5G',observation OBSERVATION,statut STATUT FROM cells_down WHERE report_date=? AND zone=?", (r, z))
     dr = qdf("SELECT site SITE,sites_impactes 'SITES IMPACTÉS',dr2 DR2,escalade ESCALADE,evitable 'ÉVITABLE ?',point_bloquant 'POINT BLOQUANT',statut STATUT FROM dr2 WHERE report_date=? AND zone=?", (r, z))
+    if not dr.empty:
+        dr['DR2'] = dr['DR2'].map(lambda v: _clean_choice(v, YESNO, blank_legacy=True))
+        dr['ÉVITABLE ?'] = dr['ÉVITABLE ?'].map(lambda v: _clean_choice(v, YESNO, blank_legacy=True))
+        dr['ESCALADE'] = dr['ESCALADE'].map(lambda v: '' if str(v).strip() == 'À confirmer' else ('' if pd.isna(v) else str(v).strip()))
     ins = qdf("SELECT base BASES,installations INSTALLATIONS,derangements DÉRANGEMENTS,points_bloquants 'POINTS BLOQUANTS' FROM instances WHERE report_date=? AND zone=?", (r, z))
     deg = qdf("SELECT site_name 'SITE NAME',g2 '2G',g3 '3G',g4 '4G',disponibilite 'DISPONIBILITÉ',base BASE FROM degraded WHERE report_date=? AND zone=?", (r, z))
     forms = qdf("SELECT base BASE,intitule 'INTITULÉ',notions 'NOTIONS VUES' FROM formations WHERE report_date=? AND zone=?", (r, z))
@@ -1656,6 +1709,14 @@ if "yas_mobile_choice" not in st.session_state:
     st.session_state.yas_mobile_choice = (
         "🚨 Rapport du jour" if ROLE == "ZONE" else "✨ Actualités opérationnelles"
     )
+else:
+    _mobile_allowed = (
+        ["🚨 Rapport du jour", "🗓️ Planning", "🧠 Rex & Formations", "🚀 Vérifier & Soumettre"]
+        if ROLE == "ZONE" else
+        ["✨ Actualités opérationnelles", "📄 Problématiques", "📅 Week-ends", "🗓️ Planning secteurs"]
+    )
+    if st.session_state.yas_mobile_choice not in _mobile_allowed:
+        st.session_state.yas_mobile_choice = _mobile_allowed[0]
 
 def _desktop_zone_navigation_changed():
     st.session_state.yas_mobile_nav_override = False
@@ -2137,36 +2198,32 @@ if ROLE == 'ZONE':
         if 'STATUT' in cells.columns:
             cells['STATUT'] = cells['STATUT'].replace({'🟢 UP': 'UP', '🔴 DOWN': 'DOWN'})
         st.session_state['cells_data'] = cells.copy()
-        total = int(cells[['2G','3G','4G','5G']].fillna(0).sum().sum()) if not cells.empty else 0
+        total = _safe_int(cells[['2G','3G','4G','5G']].apply(pd.to_numeric, errors='coerce').fillna(0).sum().sum()) if not cells.empty else 0
 
         st.metric('TOTAL CELLS DOWN', total)
 
         st.markdown('<div class="section-title" style="margin-top:25px;">📌 2. DR2 J-1 — suivi des incidents</div>', unsafe_allow_html=True)
         dr_editor_df = dr0.copy() if not dr0.empty else pd.DataFrame(columns=['SITE','SITES IMPACTÉS','DR2','ESCALADE','ÉVITABLE ?','POINT BLOQUANT','STATUT'])
-        # Nettoyage des anciennes valeurs : « À confirmer » n'est plus proposé.
-        for _col in ['DR2', 'ÉVITABLE ?']:
-            if _col in dr_editor_df.columns:
-                dr_editor_df[_col] = dr_editor_df[_col].replace({'À confirmer': '', 'à confirmer': ''})
         if 'STATUT' in dr_editor_df.columns:
             dr_editor_df['STATUT'] = dr_editor_df['STATUT'].replace({'UP': '🟢 UP', 'DOWN': '🔴 DOWN'})
         dr = st.data_editor(
             dr_editor_df,
             num_rows='dynamic', use_container_width=True, hide_index=True,
             column_config={
-                # DR2 : uniquement OUI / NON
-                'DR2': st.column_config.SelectboxColumn(options=YESNO),
-                # ESCALADE : aucune liste déroulante, saisie libre
-                'ESCALADE': st.column_config.TextColumn(),
-                # ÉVITABLE ? : uniquement OUI / NON
-                'ÉVITABLE ?': st.column_config.SelectboxColumn(options=YESNO),
+                'DR2': st.column_config.SelectboxColumn(options=YESNO, required=False),
+                'ESCALADE': st.column_config.TextColumn('ESCALADE', help='Saisie libre : indiquez l’escalade si nécessaire.'),
+                'ÉVITABLE ?': st.column_config.SelectboxColumn(options=YESNO, required=False),
                 'STATUT': st.column_config.SelectboxColumn(options=STATUS_DISPLAY, required=False)
             }, key='dr_editor'
         )
         if 'STATUT' in dr.columns:
             dr['STATUT'] = dr['STATUT'].replace({'🟢 UP': 'UP', '🔴 DOWN': 'DOWN'})
-        for _col in ['DR2', 'ÉVITABLE ?']:
-            if _col in dr.columns:
-                dr[_col] = dr[_col].replace({'À confirmer': '', 'à confirmer': ''})
+        if 'DR2' in dr.columns:
+            dr['DR2'] = dr['DR2'].map(lambda v: _clean_choice(v, YESNO, blank_legacy=True))
+        if 'ÉVITABLE ?' in dr.columns:
+            dr['ÉVITABLE ?'] = dr['ÉVITABLE ?'].map(lambda v: _clean_choice(v, YESNO, blank_legacy=True))
+        if 'ESCALADE' in dr.columns:
+            dr['ESCALADE'] = dr['ESCALADE'].map(lambda v: '' if str(v).strip() == 'À confirmer' else ('' if pd.isna(v) else str(v).strip()))
         st.session_state['dr_data'] = dr.copy()
 
         st.markdown('<div class="section-title" style="margin-top:25px;">💬 3. DIFFICULTÉS — ce qui bloque le travail</div>', unsafe_allow_html=True)
@@ -2604,7 +2661,7 @@ if ROLE == 'ZONE':
 
         s1, s2, s3, s4 = st.columns(4)
         with s1:
-            st.metric("Cells Down", int(cells[['2G','3G','4G','5G']].fillna(0).sum().sum()) if not cells.empty else 0)
+            st.metric("Cells Down", _safe_int(cells[['2G','3G','4G','5G']].apply(pd.to_numeric, errors='coerce').fillna(0).sum().sum()) if not cells.empty else 0)
         with s2:
             st.metric("DR2", int((dr['DR2'].fillna('') == 'OUI').sum()) if not dr.empty else 0)
         with s3:
@@ -2677,7 +2734,7 @@ else:
 
     k1, k2, k3, k4 = st.columns(4)
     k1.metric('RAPPORTS TRANSMIS', f'{len(submitted)}/{len(ZONES)}')
-    k2.metric('TOTAL CELLS DOWN', int(cells[['2G','3G','4G','5G']].fillna(0).sum().sum()) if not cells.empty else 0)
+    k2.metric('TOTAL CELLS DOWN', _safe_int(cells[['2G','3G','4G','5G']].apply(pd.to_numeric, errors='coerce').fillna(0).sum().sum()) if not cells.empty else 0)
     k3.metric('INCIDENTS DR2', int((dr.DR2.fillna('') == 'OUI').sum()) if not dr.empty else 0)
     k4.metric('PERMANENCES WEEK-END', int(qdf('SELECT COUNT(*) c FROM weekend_permanence WHERE weekend_start LIKE ? AND zone IN ({})'.format(','.join(['?']*len(ZONES))), tuple([f'%/{dt_selected.month:02d}/{dt_selected.year}'] + ZONES)).iloc[0,0]) if ZONES else 0)
 
