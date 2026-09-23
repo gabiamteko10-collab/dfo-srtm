@@ -2117,6 +2117,9 @@ if ROLE == 'ZONE':
         value = st.session_state.get(name)
         return value.copy() if isinstance(value, pd.DataFrame) else fallback.copy()
 
+    # NOTE UX: les éditeurs utilisent maintenant directement leur DataFrame retourné.
+    # Cela évite un second rerun via on_change qui pouvait faire sauter la sélection
+    # visuelle d'une cellule/colonne pendant la saisie.
     def _sync_data_editor(widget_key, data_key):
         """Synchronise immédiatement les modifications d'un st.data_editor.
 
@@ -2202,18 +2205,19 @@ if ROLE == 'ZONE':
         cells_editor_df = cells_editor_df[cells_order]
         if 'STATUT' in cells_editor_df.columns:
             cells_editor_df['STATUT'] = cells_editor_df['STATUT'].replace({'UP': '🟢 UP', 'DOWN': '🔴 DOWN'})
-        cells = st.data_editor(
-            cells_editor_df,
-            num_rows='dynamic', use_container_width=True, hide_index=True,
-            column_config={
-                '2G': st.column_config.NumberColumn(min_value=0, step=1),
-                '3G': st.column_config.NumberColumn(min_value=0, step=1),
-                '4G': st.column_config.NumberColumn(min_value=0, step=1),
-                '5G': st.column_config.NumberColumn(min_value=0, step=1),
-                'STATUT': st.column_config.SelectboxColumn(options=STATUS_DISPLAY, required=False)
-            }, key=f'cells_editor_{_draft_context_id}',
-            on_change=_sync_data_editor, args=(f'cells_editor_{_draft_context_id}', 'cells_data')
-        )
+        with st.form(key=f'cells_form_{_draft_context_id}', clear_on_submit=False):
+            cells = st.data_editor(
+                cells_editor_df,
+                num_rows='dynamic', use_container_width=True, hide_index=True,
+                column_config={
+                    '2G': st.column_config.NumberColumn(min_value=0, step=1),
+                    '3G': st.column_config.NumberColumn(min_value=0, step=1),
+                    '4G': st.column_config.NumberColumn(min_value=0, step=1),
+                    '5G': st.column_config.NumberColumn(min_value=0, step=1),
+                    'STATUT': st.column_config.SelectboxColumn(options=STATUS_DISPLAY, required=False)
+                }, key=f'cells_editor_{_draft_context_id}'
+            )
+            st.form_submit_button('💾 Valider les modifications CELLS', use_container_width=True)
         if 'STATUT' in cells.columns:
             cells['STATUT'] = cells['STATUT'].replace({'🟢 UP': 'UP', '🔴 DOWN': 'DOWN'})
         st.session_state['cells_data'] = cells.copy()
@@ -2237,20 +2241,21 @@ if ROLE == 'ZONE':
                 dr_editor_df[_col] = dr_editor_df[_col].replace({'À confirmer': '', 'à confirmer': ''})
         if 'STATUT' in dr_editor_df.columns:
             dr_editor_df['STATUT'] = dr_editor_df['STATUT'].replace({'UP': '🟢 UP', 'DOWN': '🔴 DOWN'})
-        dr = st.data_editor(
-            dr_editor_df,
-            num_rows='dynamic', use_container_width=True, hide_index=True,
-            column_config={
-                # DR2 : uniquement OUI / NON
-                'DR2': st.column_config.SelectboxColumn(options=YESNO),
-                # ESCALADE : aucune liste déroulante, saisie libre
-                'ESCALADE': st.column_config.TextColumn(),
-                # ÉVITABLE ? : uniquement OUI / NON
-                'ÉVITABLE ?': st.column_config.SelectboxColumn(options=YESNO),
-                'STATUT': st.column_config.SelectboxColumn(options=STATUS_DISPLAY, required=False)
-            }, key=f'dr_editor_{_draft_context_id}',
-            on_change=_sync_data_editor, args=(f'dr_editor_{_draft_context_id}', 'dr_data')
-        )
+        with st.form(key=f'dr_form_{_draft_context_id}', clear_on_submit=False):
+            dr = st.data_editor(
+                dr_editor_df,
+                num_rows='dynamic', use_container_width=True, hide_index=True,
+                column_config={
+                    # DR2 : uniquement OUI / NON
+                    'DR2': st.column_config.SelectboxColumn(options=YESNO),
+                    # ESCALADE : aucune liste déroulante, saisie libre
+                    'ESCALADE': st.column_config.TextColumn(),
+                    # ÉVITABLE ? : uniquement OUI / NON
+                    'ÉVITABLE ?': st.column_config.SelectboxColumn(options=YESNO),
+                    'STATUT': st.column_config.SelectboxColumn(options=STATUS_DISPLAY, required=False)
+                }, key=f'dr_editor_{_draft_context_id}'
+            )
+            st.form_submit_button('💾 Valider les modifications DR2', use_container_width=True)
         if 'STATUT' in dr.columns:
             dr['STATUT'] = dr['STATUT'].replace({'🟢 UP': 'UP', '🔴 DOWN': 'DOWN'})
         for _col in ['DR2', 'ÉVITABLE ?']:
@@ -2269,11 +2274,15 @@ if ROLE == 'ZONE':
         st.session_state['diff_data'] = difficulties or ''
 
         st.markdown('<div class="section-title" style="margin-top:20px;">⚙️ 4. INSTANCES — suivi opérationnel</div>', unsafe_allow_html=True)
-        ins = st.data_editor(ins, num_rows='dynamic', use_container_width=True, hide_index=True, key=f'ins_editor_{_draft_context_id}', on_change=_sync_data_editor, args=(f'ins_editor_{_draft_context_id}', 'ins_data'))
+        with st.form(key=f'ins_form_{_draft_context_id}', clear_on_submit=False):
+            ins = st.data_editor(ins, num_rows='dynamic', use_container_width=True, hide_index=True, key=f'ins_editor_{_draft_context_id}')
+            st.form_submit_button('💾 Valider les modifications INSTANCES', use_container_width=True)
         st.session_state['ins_data'] = ins.copy()
 
         st.markdown('<div class="section-title" style="margin-top:20px;">📉 5. SITES DÉGRADÉS — qualité réseau</div>', unsafe_allow_html=True)
-        deg = st.data_editor(deg if not deg.empty else pd.DataFrame(columns=['SITE NAME','2G','3G','4G','DISPONIBILITÉ','BASE']), num_rows='dynamic', use_container_width=True, hide_index=True, key=f'deg_editor_{_draft_context_id}', on_change=_sync_data_editor, args=(f'deg_editor_{_draft_context_id}', 'deg_data'))
+        with st.form(key=f'deg_form_{_draft_context_id}', clear_on_submit=False):
+            deg = st.data_editor(deg if not deg.empty else pd.DataFrame(columns=['SITE NAME','2G','3G','4G','DISPONIBILITÉ','BASE']), num_rows='dynamic', use_container_width=True, hide_index=True, key=f'deg_editor_{_draft_context_id}')
+            st.form_submit_button('💾 Valider les modifications SITES DÉGRADÉS', use_container_width=True)
         st.session_state['deg_data'] = deg.copy()
 
         render_daily_synthesis(r, zone=ZONE)
@@ -2321,8 +2330,7 @@ if ROLE == 'ZONE':
                 'NUIT': st.column_config.SelectboxColumn('NUIT', options=WEEKEND_SHIFT_OPTIONS, width='small'),
                 'ASTREINTE': st.column_config.SelectboxColumn('ASTREINTE', options=WEEKEND_SHIFT_OPTIONS, width='small'),
             },
-            key=f'editor_{weekend_key}',
-            on_change=_sync_data_editor, args=(f'editor_{weekend_key}', weekend_key)
+            key=f'editor_{weekend_key}'
         )
 
         # On réinjecte les 5 colonnes affichées dans la structure complète
@@ -2484,7 +2492,9 @@ if ROLE == 'ZONE':
         st.markdown('<div class="section-title">🧠 PARTAGE D\'EXPÉRIENCE & SESSIONS</div>', unsafe_allow_html=True)
 
         st.markdown('### 📝 Retour d’expérience / Formation')
-        forms = st.data_editor(forms, num_rows='dynamic', use_container_width=True, hide_index=True, key=f'forms_editor_{_draft_context_id}', on_change=_sync_data_editor, args=(f'forms_editor_{_draft_context_id}', 'forms_data'))
+        with st.form(key=f'forms_form_{_draft_context_id}', clear_on_submit=False):
+            forms = st.data_editor(forms, num_rows='dynamic', use_container_width=True, hide_index=True, key=f'forms_editor_{_draft_context_id}')
+            st.form_submit_button('💾 Valider les modifications FORMATION', use_container_width=True)
         st.session_state['forms_data'] = forms.copy()
 
         st.markdown('### 📸🎥 Photos & vidéos du retour d’expérience')
@@ -2613,7 +2623,34 @@ if ROLE == 'ZONE':
                 font-size: 12px;
                 opacity: .85;
             }
-            </style>
+            
+
+            /* ===== DATA EDITOR : zéro animation pendant la saisie ===== */
+            div[data-testid="stDataEditor"],
+            div[data-testid="stDataEditor"] *,
+            div[data-testid="stDataEditor"] [role="gridcell"],
+            div[data-testid="stDataEditor"] [role="row"],
+            div[data-testid="stDataEditor"] [role="columnheader"] {
+                transition: none !important;
+                animation: none !important;
+            }
+
+            /* ===== DATA EDITOR : focus discret ===== */
+            /* Evite l'effet de changement d'etat trop marqué au clic. */
+            div[data-testid="stDataEditor"] [role="gridcell"]:focus,
+            div[data-testid="stDataEditor"] [role="gridcell"]:focus-within {
+                outline: none !important;
+                box-shadow: none !important;
+            }
+            div[data-testid="stDataEditor"] [role="gridcell"][aria-selected="true"] {
+                background-color: transparent !important;
+            }
+            div[data-testid="stDataEditor"] [role="columnheader"]:focus,
+            div[data-testid="stDataEditor"] [role="columnheader"]:focus-within {
+                outline: none !important;
+                box-shadow: none !important;
+            }
+</style>
             """, unsafe_allow_html=True)
 
             if not filtered_media_rows:
