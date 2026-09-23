@@ -915,6 +915,11 @@ st.markdown("""
         display: none;
     }
 
+    /* Hamburger mobile : masqué par défaut sur PC. */
+    div[data-testid="stButton"]:has(button[aria-label="☰"]) {
+        display: none !important;
+    }
+
     /* Desktop : sidebar Streamlit normale, navigation PC inchangée. */
     @media (min-width: 701px) {
         .yas-mobile-header, .yas-mobile-menu { display: none !important; }
@@ -954,6 +959,9 @@ st.markdown("""
             font-weight: 900;
             line-height: 1.1;
             text-transform: uppercase;
+        }
+        div[data-testid="stButton"]:has(button[aria-label="☰"]) {
+            display: block !important;
         }
         div[data-testid="stButton"] button[aria-label="☰"] {
             position: fixed !important;
