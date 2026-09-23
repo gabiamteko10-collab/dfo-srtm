@@ -2205,8 +2205,7 @@ if ROLE == 'ZONE':
         cells_editor_df = cells_editor_df[cells_order]
         if 'STATUT' in cells_editor_df.columns:
             cells_editor_df['STATUT'] = cells_editor_df['STATUT'].replace({'UP': '🟢 UP', 'DOWN': '🔴 DOWN'})
-        with st.form(key=f'cells_form_{_draft_context_id}', clear_on_submit=False):
-            cells = st.data_editor(
+        cells = st.data_editor(
                 cells_editor_df,
                 num_rows='dynamic', use_container_width=True, hide_index=True,
                 column_config={
@@ -2217,7 +2216,6 @@ if ROLE == 'ZONE':
                     'STATUT': st.column_config.SelectboxColumn(options=STATUS_DISPLAY, required=False)
                 }, key=f'cells_editor_{_draft_context_id}'
             )
-            st.form_submit_button('💾 Valider les modifications CELLS', use_container_width=True)
         if 'STATUT' in cells.columns:
             cells['STATUT'] = cells['STATUT'].replace({'🟢 UP': 'UP', '🔴 DOWN': 'DOWN'})
         st.session_state['cells_data'] = cells.copy()
@@ -2241,8 +2239,7 @@ if ROLE == 'ZONE':
                 dr_editor_df[_col] = dr_editor_df[_col].replace({'À confirmer': '', 'à confirmer': ''})
         if 'STATUT' in dr_editor_df.columns:
             dr_editor_df['STATUT'] = dr_editor_df['STATUT'].replace({'UP': '🟢 UP', 'DOWN': '🔴 DOWN'})
-        with st.form(key=f'dr_form_{_draft_context_id}', clear_on_submit=False):
-            dr = st.data_editor(
+        dr = st.data_editor(
                 dr_editor_df,
                 num_rows='dynamic', use_container_width=True, hide_index=True,
                 column_config={
@@ -2255,7 +2252,6 @@ if ROLE == 'ZONE':
                     'STATUT': st.column_config.SelectboxColumn(options=STATUS_DISPLAY, required=False)
                 }, key=f'dr_editor_{_draft_context_id}'
             )
-            st.form_submit_button('💾 Valider les modifications DR2', use_container_width=True)
         if 'STATUT' in dr.columns:
             dr['STATUT'] = dr['STATUT'].replace({'🟢 UP': 'UP', '🔴 DOWN': 'DOWN'})
         for _col in ['DR2', 'ÉVITABLE ?']:
@@ -2274,15 +2270,11 @@ if ROLE == 'ZONE':
         st.session_state['diff_data'] = difficulties or ''
 
         st.markdown('<div class="section-title" style="margin-top:20px;">⚙️ 4. INSTANCES — suivi opérationnel</div>', unsafe_allow_html=True)
-        with st.form(key=f'ins_form_{_draft_context_id}', clear_on_submit=False):
-            ins = st.data_editor(ins, num_rows='dynamic', use_container_width=True, hide_index=True, key=f'ins_editor_{_draft_context_id}')
-            st.form_submit_button('💾 Valider les modifications INSTANCES', use_container_width=True)
+        ins = st.data_editor(ins, num_rows='dynamic', use_container_width=True, hide_index=True, key=f'ins_editor_{_draft_context_id}')
         st.session_state['ins_data'] = ins.copy()
 
         st.markdown('<div class="section-title" style="margin-top:20px;">📉 5. SITES DÉGRADÉS — qualité réseau</div>', unsafe_allow_html=True)
-        with st.form(key=f'deg_form_{_draft_context_id}', clear_on_submit=False):
-            deg = st.data_editor(deg if not deg.empty else pd.DataFrame(columns=['SITE NAME','2G','3G','4G','DISPONIBILITÉ','BASE']), num_rows='dynamic', use_container_width=True, hide_index=True, key=f'deg_editor_{_draft_context_id}')
-            st.form_submit_button('💾 Valider les modifications SITES DÉGRADÉS', use_container_width=True)
+        deg = st.data_editor(deg if not deg.empty else pd.DataFrame(columns=['SITE NAME','2G','3G','4G','DISPONIBILITÉ','BASE']), num_rows='dynamic', use_container_width=True, hide_index=True, key=f'deg_editor_{_draft_context_id}')
         st.session_state['deg_data'] = deg.copy()
 
         render_daily_synthesis(r, zone=ZONE)
@@ -2492,9 +2484,7 @@ if ROLE == 'ZONE':
         st.markdown('<div class="section-title">🧠 PARTAGE D\'EXPÉRIENCE & SESSIONS</div>', unsafe_allow_html=True)
 
         st.markdown('### 📝 Retour d’expérience / Formation')
-        with st.form(key=f'forms_form_{_draft_context_id}', clear_on_submit=False):
-            forms = st.data_editor(forms, num_rows='dynamic', use_container_width=True, hide_index=True, key=f'forms_editor_{_draft_context_id}')
-            st.form_submit_button('💾 Valider les modifications FORMATION', use_container_width=True)
+        forms = st.data_editor(forms, num_rows='dynamic', use_container_width=True, hide_index=True, key=f'forms_editor_{_draft_context_id}')
         st.session_state['forms_data'] = forms.copy()
 
         st.markdown('### 📸🎥 Photos & vidéos du retour d’expérience')
