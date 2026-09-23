@@ -1039,8 +1039,9 @@ MEDIA_DIR.mkdir(parents=True, exist_ok=True)
 
 DB = 'daily_mobile_maritime.db'
 ZONES = ['ANEHO', 'TSEVIE', 'KPALIME']
-STATUS = ['OK', 'À suivre', 'Résolu', 'En cours', 'Critique']
-YESNO = ['OUI', 'NON', 'À confirmer']
+STATUS = ['UP', 'DOWN']
+STATUS_DISPLAY = ['🟢 UP', '🔴 DOWN']
+YESNO = ['OUI', 'NON']
 
 ROLES_EXCEL = [
     'PJ : Permanence de jour (07h-18h)', 
@@ -1118,7 +1119,12 @@ def init():
     c = db(); q = c.cursor()
     q.execute('''CREATE TABLE IF NOT EXISTS reports(id INTEGER PRIMARY KEY, report_date TEXT, zone TEXT, submitted_by TEXT, submitted_at TEXT, difficulties TEXT, UNIQUE(report_date,zone))''')
     q.execute('''CREATE TABLE IF NOT EXISTS cells_down(id INTEGER PRIMARY KEY, report_date TEXT, zone TEXT, site TEXT, g2 INTEGER, g3 INTEGER, g4 INTEGER, g5 INTEGER, observation TEXT, statut TEXT)''')
-    q.execute('''CREATE TABLE IF NOT EXISTS dr2(id INTEGER PRIMARY KEY, report_date TEXT, zone TEXT, site TEXT, dr2 TEXT, escalade TEXT, evitable TEXT, point_bloquant TEXT, statut TEXT)''')
+    q.execute('''CREATE TABLE IF NOT EXISTS dr2(id INTEGER PRIMARY KEY, report_date TEXT, zone TEXT, site TEXT, sites_impactes TEXT, dr2 TEXT, escalade TEXT, evitable TEXT, point_bloquant TEXT, statut TEXT)''')
+    # Migration des anciennes bases : ajout de la colonne SITES IMPACTÉS si elle n'existe pas.
+    try:
+        q.execute("ALTER TABLE dr2 ADD COLUMN sites_impactes TEXT")
+    except sqlite3.OperationalError:
+        pass
     q.execute('''CREATE TABLE IF NOT EXISTS instances(id INTEGER PRIMARY KEY, report_date TEXT, zone TEXT, base TEXT, installations INTEGER, derangements INTEGER, points_bloquants TEXT)''')
     q.execute('''CREATE TABLE IF NOT EXISTS degraded(id INTEGER PRIMARY KEY, report_date TEXT, zone TEXT, site_name TEXT, g2 REAL, g3 REAL, g4 REAL, disponibilite REAL, base TEXT)''')
     q.execute('''CREATE TABLE IF NOT EXISTS formations(id INTEGER PRIMARY KEY, report_date TEXT, zone TEXT, base TEXT, intitule TEXT, notions TEXT)''')
@@ -1607,7 +1613,7 @@ def save(r, z, diff, cells, dr, ins, deg, forms, plan):
     for x in cells.fillna('').to_dict('records'): 
         q.execute('INSERT INTO cells_down(report_date,zone,site,g2,g3,g4,g5,observation,statut) VALUES(?,?,?,?,?,?,?,?,?)', (r, z, x.get('SITE',''), int(x.get('2G') or 0), int(x.get('3G') or 0), int(x.get('4G') or 0), int(x.get('5G') or 0), x.get('OBSERVATION',''), x.get('STATUT','')))
     for x in dr.fillna('').to_dict('records'): 
-        q.execute('INSERT INTO dr2(report_date,zone,site,dr2,escalade,evitable,point_bloquant,statut) VALUES(?,?,?,?,?,?,?,?)', (r, z, x.get('SITE',''), x.get('DR2',''), x.get('ESCALADE',''), x.get('ÉVITABLE ?',''), x.get('POINT BLOQUANT',''), x.get('STATUT','')))
+        q.execute('INSERT INTO dr2(report_date,zone,site,sites_impactes,dr2,escalade,evitable,point_bloquant,statut) VALUES(?,?,?,?,?,?,?,?,?)', (r, z, x.get('SITE',''), x.get('SITES IMPACTÉS',''), x.get('DR2',''), x.get('ESCALADE',''), x.get('ÉVITABLE ?',''), x.get('POINT BLOQUANT',''), x.get('STATUT','')))
     for x in ins.fillna('').to_dict('records'): 
         q.execute('INSERT INTO instances(report_date,zone,base,installations,derangements,points_bloquants) VALUES(?,?,?,?,?,?)', (r, z, x.get('BASES',''), int(x.get('INSTALLATIONS') or 0), int(x.get('DÉRANGEMENTS') or 0), x.get('POINTS BLOQUANTS','')))
     for x in deg.fillna('').to_dict('records'): 
@@ -1622,7 +1628,7 @@ def save(r, z, diff, cells, dr, ins, deg, forms, plan):
 def load(r, z):
     diff = qdf('SELECT difficulties FROM reports WHERE report_date=? AND zone=?', (r, z))
     cells = qdf("SELECT site SITE,g2 '2G',g3 '3G',g4 '4G',g5 '5G',observation OBSERVATION,statut STATUT FROM cells_down WHERE report_date=? AND zone=?", (r, z))
-    dr = qdf("SELECT site SITE,dr2 DR2,escalade ESCALADE,evitable 'ÉVITABLE ?',point_bloquant 'POINT BLOQUANT',statut STATUT FROM dr2 WHERE report_date=? AND zone=?", (r, z))
+    dr = qdf("SELECT site SITE,sites_impactes 'SITES IMPACTÉS',dr2 DR2,escalade ESCALADE,evitable 'ÉVITABLE ?',point_bloquant 'POINT BLOQUANT',statut STATUT FROM dr2 WHERE report_date=? AND zone=?", (r, z))
     ins = qdf("SELECT base BASES,installations INSTALLATIONS,derangements DÉRANGEMENTS,points_bloquants 'POINTS BLOQUANTS' FROM instances WHERE report_date=? AND zone=?", (r, z))
     deg = qdf("SELECT site_name 'SITE NAME',g2 '2G',g3 '3G',g4 '4G',disponibilite 'DISPONIBILITÉ',base BASE FROM degraded WHERE report_date=? AND zone=?", (r, z))
     forms = qdf("SELECT base BASE,intitule 'INTITULÉ',notions 'NOTIONS VUES' FROM formations WHERE report_date=? AND zone=?", (r, z))
@@ -1811,7 +1817,7 @@ def build_daily_synthesis_excel(report_date, zone=None, global_data=None):
             dr.drop(columns=['ZONE'], inplace=True, errors='ignore')
 
     cells_cols = ['SITE','2G','3G','4G','5G','OBSERVATION','STATUT']
-    dr_cols = ['SITE','DR2','ESCALADE','ÉVITABLE ?','POINT BLOQUANT','STATUT']
+    dr_cols = ['SITE','SITES IMPACTÉS','DR2','ESCALADE','ÉVITABLE ?','POINT BLOQUANT','STATUT']
     ins_cols = ['BASES','INSTALLATIONS','DÉRANGEMENTS','POINTS BLOQUANTS']
     deg_cols = ['SITE NAME','2G','3G','4G','DISPONIBILITÉ','BASE']
     form_cols = ['BASE','INTITULÉ','NOTIONS VUES']
@@ -2114,35 +2120,53 @@ if ROLE == 'ZONE':
     if zone_menu == "🚨 Rapport du jour":
         st.markdown('<div class="section-title">🚨 1. CELLS DOWN — incidents réseau</div>', unsafe_allow_html=True)
         st.caption("Ajoutez une ligne uniquement pour un site impacté. Les colonnes 2G/3G/4G/5G servent à compter les cellules hors service.")
+        cells_editor_df = cells0.copy() if not cells0.empty else pd.DataFrame(columns=['SITE','2G','3G','4G','5G','OBSERVATION','STATUT'])
+        if 'STATUT' in cells_editor_df.columns:
+            cells_editor_df['STATUT'] = cells_editor_df['STATUT'].replace({'UP': '🟢 UP', 'DOWN': '🔴 DOWN'})
         cells = st.data_editor(
-            cells0 if not cells0.empty else pd.DataFrame(columns=['SITE','2G','3G','4G','5G','OBSERVATION','STATUT']),
+            cells_editor_df,
             num_rows='dynamic', use_container_width=True, hide_index=True,
             column_config={
                 '2G': st.column_config.NumberColumn(min_value=0, step=1),
                 '3G': st.column_config.NumberColumn(min_value=0, step=1),
                 '4G': st.column_config.NumberColumn(min_value=0, step=1),
                 '5G': st.column_config.NumberColumn(min_value=0, step=1),
-                'STATUT': st.column_config.SelectboxColumn(options=STATUS)
+                'STATUT': st.column_config.SelectboxColumn(options=STATUS_DISPLAY, required=False)
             }, key='cells_editor'
         )
+        if 'STATUT' in cells.columns:
+            cells['STATUT'] = cells['STATUT'].replace({'🟢 UP': 'UP', '🔴 DOWN': 'DOWN'})
         st.session_state['cells_data'] = cells.copy()
         total = int(cells[['2G','3G','4G','5G']].fillna(0).sum().sum()) if not cells.empty else 0
 
-        m1, m2 = st.columns(2)
-        with m1: st.metric('TOTAL CELLS DOWN', total)
-        with m2: st.metric('SITES IMPACTÉS', len(cells[cells['SITE'] != '']) if not cells.empty else 0)
+        st.metric('TOTAL CELLS DOWN', total)
 
         st.markdown('<div class="section-title" style="margin-top:25px;">📌 2. DR2 J-1 — suivi des incidents</div>', unsafe_allow_html=True)
+        dr_editor_df = dr0.copy() if not dr0.empty else pd.DataFrame(columns=['SITE','SITES IMPACTÉS','DR2','ESCALADE','ÉVITABLE ?','POINT BLOQUANT','STATUT'])
+        # Nettoyage des anciennes valeurs : « À confirmer » n'est plus proposé.
+        for _col in ['DR2', 'ÉVITABLE ?']:
+            if _col in dr_editor_df.columns:
+                dr_editor_df[_col] = dr_editor_df[_col].replace({'À confirmer': '', 'à confirmer': ''})
+        if 'STATUT' in dr_editor_df.columns:
+            dr_editor_df['STATUT'] = dr_editor_df['STATUT'].replace({'UP': '🟢 UP', 'DOWN': '🔴 DOWN'})
         dr = st.data_editor(
-            dr0 if not dr0.empty else pd.DataFrame(columns=['SITE','DR2','ESCALADE','ÉVITABLE ?','POINT BLOQUANT','STATUT']),
+            dr_editor_df,
             num_rows='dynamic', use_container_width=True, hide_index=True,
             column_config={
+                # DR2 : uniquement OUI / NON
                 'DR2': st.column_config.SelectboxColumn(options=YESNO),
-                'ESCALADE': st.column_config.SelectboxColumn(options=YESNO),
+                # ESCALADE : aucune liste déroulante, saisie libre
+                'ESCALADE': st.column_config.TextColumn(),
+                # ÉVITABLE ? : uniquement OUI / NON
                 'ÉVITABLE ?': st.column_config.SelectboxColumn(options=YESNO),
-                'STATUT': st.column_config.SelectboxColumn(options=STATUS)
+                'STATUT': st.column_config.SelectboxColumn(options=STATUS_DISPLAY, required=False)
             }, key='dr_editor'
         )
+        if 'STATUT' in dr.columns:
+            dr['STATUT'] = dr['STATUT'].replace({'🟢 UP': 'UP', '🔴 DOWN': 'DOWN'})
+        for _col in ['DR2', 'ÉVITABLE ?']:
+            if _col in dr.columns:
+                dr[_col] = dr[_col].replace({'À confirmer': '', 'à confirmer': ''})
         st.session_state['dr_data'] = dr.copy()
 
         st.markdown('<div class="section-title" style="margin-top:25px;">💬 3. DIFFICULTÉS — ce qui bloque le travail</div>', unsafe_allow_html=True)
@@ -2642,7 +2666,7 @@ if ROLE == 'ZONE':
 else:
     rep, cells, dr, ins, deg, forms, plan = qdf('SELECT zone ZONE,submitted_by "REMPLI PAR",submitted_at "SOUMIS LE",difficulties DIFFICULTES FROM reports WHERE report_date=? ORDER BY zone', (r,)), \
                                            qdf("SELECT zone ZONE,site SITE,g2 '2G',g3 '3G',g4 '4G',g5 '5G',observation OBSERVATION,statut STATUT FROM cells_down WHERE report_date=? ORDER BY zone", (r,)), \
-                                           qdf("SELECT zone ZONE,site SITE,dr2 DR2,escalade ESCALADE,evitable 'ÉVITABLE ?',point_bloquant 'POINT BLOQUANT',statut STATUT FROM dr2 WHERE report_date=? ORDER BY zone", (r,)), \
+                                           qdf("SELECT zone ZONE,site SITE,sites_impactes 'SITES IMPACTÉS',dr2 DR2,escalade ESCALADE,evitable 'ÉVITABLE ?',point_bloquant 'POINT BLOQUANT',statut STATUT FROM dr2 WHERE report_date=? ORDER BY zone", (r,)), \
                                            qdf("SELECT zone ZONE,base BASE,installations INSTALLATIONS,derangements DÉRANGEMENTS,points_bloquants 'POINTS BLOQUANTS' FROM instances WHERE report_date=? ORDER BY zone", (r,)), \
                                            qdf("SELECT zone ZONE,site_name 'SITE NAME',g2 '2G',g3 '3G',g4 '4G',disponibilite 'DISPONIBILITÉ',base BASE FROM degraded WHERE report_date=? ORDER BY zone", (r,)), \
                                            qdf("SELECT zone ZONE,base BASE,intitule 'INTITULÉ',notions 'NOTIONS VUES' FROM formations WHERE report_date=? ORDER BY zone", (r,)), \
