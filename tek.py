@@ -2136,6 +2136,17 @@ if ROLE == 'ZONE':
         st.markdown('<div class="section-title">🚨 1. CELLS DOWN — incidents réseau</div>', unsafe_allow_html=True)
         st.caption("Ajoutez une ligne uniquement pour un site impacté. Les colonnes 2G/3G/4G/5G servent à compter les cellules hors service.")
         cells_editor_df = cells.copy() if not cells.empty else pd.DataFrame(columns=['SITE','2G','3G','4G','5G','OBSERVATION','STATUT'])
+        # Supprime toute colonne vide/Unnamed avant SITE dans Cells Down.
+        cells_editor_df = cells_editor_df.loc[
+            :,
+            ~cells_editor_df.columns.astype(str).str.strip().str.lower().isin(['', 'unnamed: 0', 'unnamed'])
+        ].copy()
+        # Garantit que SITE est bien la première colonne affichée.
+        cells_order = ['SITE', '2G', '3G', '4G', '5G', 'OBSERVATION', 'STATUT']
+        for _col in cells_order:
+            if _col not in cells_editor_df.columns:
+                cells_editor_df[_col] = ''
+        cells_editor_df = cells_editor_df[cells_order]
         if 'STATUT' in cells_editor_df.columns:
             cells_editor_df['STATUT'] = cells_editor_df['STATUT'].replace({'UP': '🟢 UP', 'DOWN': '🔴 DOWN'})
         cells = st.data_editor(
