@@ -1056,39 +1056,6 @@ ROLES_SHORT = ['PJ', 'PN', 'A', 'C', 'Repos', 'SN']
 WEEKEND_TYPES = ['TECHNICIEN', 'CHAUFFEUR']
 WEEKEND_SHIFT_OPTIONS = ['', 'PJ', 'PN', 'A']
 
-
-def _safe_int(value, default=0):
-    """Conversion entière robuste pour les valeurs saisies dans les tableaux."""
-    if value is None or (isinstance(value, str) and not value.strip()):
-        return default
-    try:
-        if pd.isna(value): return default
-    except Exception:
-        pass
-    try: return int(float(str(value).strip().replace(',', '.')))
-    except (TypeError, ValueError): return default
-
-
-def _safe_float(value, default=0.0):
-    """Conversion décimale robuste pour les valeurs saisies dans les tableaux."""
-    if value is None or (isinstance(value, str) and not value.strip()):
-        return default
-    try:
-        if pd.isna(value): return default
-    except Exception:
-        pass
-    try: return float(str(value).strip().replace(',', '.'))
-    except (TypeError, ValueError): return default
-
-
-def _clean_choice(value, allowed=None, blank_legacy=False):
-    value = '' if value is None else str(value).strip()
-    if blank_legacy and value == 'À confirmer':
-        return ''
-    if allowed is not None and value not in allowed and value != '':
-        return ''
-    return value
-
 ROLES_MAPPING = {
     'PJ': 'PJ : Permanence de jour (07h-18h)',
     'PN': 'PN : Permanence de nuit (18h-07h)',
@@ -1223,12 +1190,8 @@ if not st.session_state.get('auth', False):
 USER, ROLE, ZONE = st.session_state.user, st.session_state.role, st.session_state.zone
 
 def qdf(sql, params=()):
-    """Lecture SQLite avec fermeture garantie de la connexion."""
-    c = db()
-    try:
-        return pd.read_sql_query(sql, c, params=params)
-    finally:
-        c.close()
+    c = db(); d = pd.read_sql_query(sql, c, params=params); c.close()
+    return d
 
 def get_monthly_schedule_config(year, month, zone):
     """Récupère les paramètres personnalisables de génération du mois."""
@@ -1633,13 +1596,7 @@ def save(r, z, diff, cells, dr, ins, deg, forms, plan):
     def _clean_rows(df):
         if df is None or df.empty:
             return pd.DataFrame()
-        out = df.copy().dropna(how='all').copy()
-        if 'DR2' in out.columns:
-            out['DR2'] = out['DR2'].map(lambda v: _clean_choice(v, YESNO, blank_legacy=True))
-        if 'ÉVITABLE ?' in out.columns:
-            out['ÉVITABLE ?'] = out['ÉVITABLE ?'].map(lambda v: _clean_choice(v, YESNO, blank_legacy=True))
-        if 'ESCALADE' in out.columns:
-            out['ESCALADE'] = out['ESCALADE'].map(lambda v: '' if str(v).strip() == 'À confirmer' else ('' if pd.isna(v) else str(v).strip()))
+        out = df.copy().dropna(how='all')
         return out.fillna('')
 
     cells = _clean_rows(cells)
@@ -1654,34 +1611,24 @@ def save(r, z, diff, cells, dr, ins, deg, forms, plan):
     now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     q.execute('INSERT INTO reports(report_date,zone,submitted_by,submitted_at,difficulties) VALUES(?,?,?,?,?)', (r, z, USER, now, diff))
     for x in cells.fillna('').to_dict('records'): 
-        q.execute('INSERT INTO cells_down(report_date,zone,site,g2,g3,g4,g5,observation,statut) VALUES(?,?,?,?,?,?,?,?,?)', (r, z, x.get('SITE',''), _safe_int(x.get('2G')), _safe_int(x.get('3G')), _safe_int(x.get('4G')), _safe_int(x.get('5G')), x.get('OBSERVATION',''), x.get('STATUT','')))
+        q.execute('INSERT INTO cells_down(report_date,zone,site,g2,g3,g4,g5,observation,statut) VALUES(?,?,?,?,?,?,?,?,?)', (r, z, x.get('SITE',''), int(x.get('2G') or 0), int(x.get('3G') or 0), int(x.get('4G') or 0), int(x.get('5G') or 0), x.get('OBSERVATION',''), x.get('STATUT','')))
     for x in dr.fillna('').to_dict('records'): 
         q.execute('INSERT INTO dr2(report_date,zone,site,sites_impactes,dr2,escalade,evitable,point_bloquant,statut) VALUES(?,?,?,?,?,?,?,?,?)', (r, z, x.get('SITE',''), x.get('SITES IMPACTÉS',''), x.get('DR2',''), x.get('ESCALADE',''), x.get('ÉVITABLE ?',''), x.get('POINT BLOQUANT',''), x.get('STATUT','')))
     for x in ins.fillna('').to_dict('records'): 
-        q.execute('INSERT INTO instances(report_date,zone,base,installations,derangements,points_bloquants) VALUES(?,?,?,?,?,?)', (r, z, x.get('BASES',''), _safe_int(x.get('INSTALLATIONS')), _safe_int(x.get('DÉRANGEMENTS')), x.get('POINTS BLOQUANTS','')))
+        q.execute('INSERT INTO instances(report_date,zone,base,installations,derangements,points_bloquants) VALUES(?,?,?,?,?,?)', (r, z, x.get('BASES',''), int(x.get('INSTALLATIONS') or 0), int(x.get('DÉRANGEMENTS') or 0), x.get('POINTS BLOQUANTS','')))
     for x in deg.fillna('').to_dict('records'): 
-        q.execute('INSERT INTO degraded(report_date,zone,site_name,g2,g3,g4,disponibilite,base) VALUES(?,?,?,?,?,?,?,?)', (r, z, x.get('SITE NAME',''), _safe_float(x.get('2G')), _safe_float(x.get('3G')), _safe_float(x.get('4G')), _safe_float(x.get('DISPONIBILITÉ')), x.get('BASE','')))
+        q.execute('INSERT INTO degraded(report_date,zone,site_name,g2,g3,g4,disponibilite,base) VALUES(?,?,?,?,?,?,?,?)', (r, z, x.get('SITE NAME',''), float(x.get('2G') or 0), float(x.get('3G') or 0), float(x.get('4G') or 0), float(x.get('DISPONIBILITÉ') or 0), x.get('BASE','')))
     for x in forms.fillna('').to_dict('records'): 
         q.execute('INSERT INTO formations(report_date,zone,base,intitule,notions) VALUES(?,?,?,?,?)', (r, z, x.get('BASE',''), x.get('INTITULÉ',''), x.get('NOTIONS VUES','')))
     for x in plan.fillna('').to_dict('records'):
         q.execute('INSERT INTO planning(report_date,zone,entite,matricule,nom,prenoms,fonction,niveau,contrat,contact,role_garde) VALUES(?,?,?,?,?,?,?,?,?,?,?)', 
                   (r, z, x.get('ENTITÉ',''), x.get('MATRICULE',''), x.get('NOM',''), x.get('PRÉNOMS',''), x.get('FONCTION',''), x.get('NIVEAU HIÉRARCHIQUE',''), x.get('NATURE CONTRAT',''), x.get('CONTACT',''), x.get('RÔLE / GARDE','')))
-    try:
-        c.commit()
-    except Exception:
-        c.rollback()
-        raise
-    finally:
-        c.close()
+    c.commit(); c.close()
 
 def load(r, z):
     diff = qdf('SELECT difficulties FROM reports WHERE report_date=? AND zone=?', (r, z))
     cells = qdf("SELECT site SITE,g2 '2G',g3 '3G',g4 '4G',g5 '5G',observation OBSERVATION,statut STATUT FROM cells_down WHERE report_date=? AND zone=?", (r, z))
     dr = qdf("SELECT site SITE,sites_impactes 'SITES IMPACTÉS',dr2 DR2,escalade ESCALADE,evitable 'ÉVITABLE ?',point_bloquant 'POINT BLOQUANT',statut STATUT FROM dr2 WHERE report_date=? AND zone=?", (r, z))
-    if not dr.empty:
-        dr['DR2'] = dr['DR2'].map(lambda v: _clean_choice(v, YESNO, blank_legacy=True))
-        dr['ÉVITABLE ?'] = dr['ÉVITABLE ?'].map(lambda v: _clean_choice(v, YESNO, blank_legacy=True))
-        dr['ESCALADE'] = dr['ESCALADE'].map(lambda v: '' if str(v).strip() == 'À confirmer' else ('' if pd.isna(v) else str(v).strip()))
     ins = qdf("SELECT base BASES,installations INSTALLATIONS,derangements DÉRANGEMENTS,points_bloquants 'POINTS BLOQUANTS' FROM instances WHERE report_date=? AND zone=?", (r, z))
     deg = qdf("SELECT site_name 'SITE NAME',g2 '2G',g3 '3G',g4 '4G',disponibilite 'DISPONIBILITÉ',base BASE FROM degraded WHERE report_date=? AND zone=?", (r, z))
     forms = qdf("SELECT base BASE,intitule 'INTITULÉ',notions 'NOTIONS VUES' FROM formations WHERE report_date=? AND zone=?", (r, z))
@@ -1709,14 +1656,6 @@ if "yas_mobile_choice" not in st.session_state:
     st.session_state.yas_mobile_choice = (
         "🚨 Rapport du jour" if ROLE == "ZONE" else "✨ Actualités opérationnelles"
     )
-else:
-    _mobile_allowed = (
-        ["🚨 Rapport du jour", "🗓️ Planning", "🧠 Rex & Formations", "🚀 Vérifier & Soumettre"]
-        if ROLE == "ZONE" else
-        ["✨ Actualités opérationnelles", "📄 Problématiques", "📅 Week-ends", "🗓️ Planning secteurs"]
-    )
-    if st.session_state.yas_mobile_choice not in _mobile_allowed:
-        st.session_state.yas_mobile_choice = _mobile_allowed[0]
 
 def _desktop_zone_navigation_changed():
     st.session_state.yas_mobile_nav_override = False
@@ -1737,7 +1676,7 @@ with st.container(key="yas-mobile-hamburger"):
 
 if st.session_state.yas_mobile_menu_open:
     if ROLE == "ZONE":
-        mobile_options = ["🚨 Rapport du jour", "🗓️ Planning", "🧠 Rex & Formations", "🚀 Vérifier & Soumettre"]
+        mobile_options = ["🚨 Rapport du jour", "🗓️ Planning", "🧠 Formations polyvalentes ", "🚀 Vérifier & Soumettre"]
         mobile_title = "Navigation • Zone"
     else:
         mobile_options = ["✨ Actualités opérationnelles", "📄 Problématiques", "📅 Week-ends", "🗓️ Planning secteurs"]
@@ -2121,7 +2060,7 @@ if ROLE == 'ZONE':
         label_visibility="collapsed",
         on_change=_desktop_zone_navigation_changed
     )
-    if st.session_state.get("yas_mobile_nav_override") and st.session_state.get("yas_mobile_choice") in ["🚨 Rapport du jour", "🗓️ Planning", "🧠 Rex & Formations", "🚀 Vérifier & Soumettre"]:
+    if st.session_state.get("yas_mobile_nav_override") and st.session_state.get("yas_mobile_choice") in ["🚨 Rapport du jour", "🗓️ Planning", "🧠 Formations polyvalentes ", "🚀 Vérifier & Soumettre"]:
         zone_menu = st.session_state.get("yas_mobile_choice", zone_menu)
     # Tableau de bord intégré directement dans le carré « ESPACE ZONE ».
     _zone_status, _zone_submitted_at = _report_status_for_zone(r, ZONE)
@@ -2154,13 +2093,26 @@ if ROLE == 'ZONE':
     ''', unsafe_allow_html=True)
 
     # ------------------------------------------------------------------
-    # État partagé entre les sous-menus
+    # BROUILLON PERSISTANT ENTRE LES SOUS-MENUS
     # ------------------------------------------------------------------
-    # Avec une navigation exclusive (if/elif), les éditeurs des autres
-    # menus ne sont pas exécutés pendant le rendu courant. On récupère donc
-    # leurs dernières valeurs depuis session_state, avec les données chargées
-    # comme valeurs de secours. Cela évite notamment les NameError dans
-    # « Vérifier & Soumettre » et conserve les saisies non encore enregistrées.
+    # Streamlit peut supprimer l'état d'un widget lorsqu'il n'est plus rendu
+    # (navigation if/elif). On conserve donc explicitement chaque tableau et
+    # chaque texte dans session_state, avec un contexte unique DATE + ZONE.
+    # Ainsi, l'utilisateur peut aller de Rapport -> Planning -> REX ->
+    # Vérifier & Soumettre puis revenir en arrière sans perdre ses saisies.
+    _draft_context = f"{ROLE}|{ZONE}|{r}"
+    _draft_context_id = hashlib.md5(_draft_context.encode('utf-8')).hexdigest()[:12]
+
+    if st.session_state.get('_draft_context') != _draft_context:
+        st.session_state['_draft_context'] = _draft_context
+        st.session_state['cells_data'] = cells0.copy()
+        st.session_state['dr_data'] = dr0.copy()
+        st.session_state['ins_data'] = ins0.copy()
+        st.session_state['deg_data'] = deg0.copy()
+        st.session_state['forms_data'] = forms0.copy()
+        st.session_state['diff_data'] = diff or ''
+        st.session_state['edited_pivot'] = get_monthly_pivot_df(dt_selected.year, dt_selected.month, ZONE).copy()
+
     def _stored_df(name, fallback):
         value = st.session_state.get(name)
         return value.copy() if isinstance(value, pd.DataFrame) else fallback.copy()
@@ -2170,18 +2122,20 @@ if ROLE == 'ZONE':
     ins = _stored_df('ins_data', ins0)
     deg = _stored_df('deg_data', deg0)
     forms = _stored_df('forms_data', forms0)
-    difficulties = st.session_state.get('diff_data', diff)
+    difficulties = st.session_state.get('diff_data', diff or '')
 
-    # Valeurs de secours nécessaires lorsque le menu Planning n'est pas rendu.
+    # Valeurs conservées même lorsque le menu Planning n'est pas rendu.
     weekend_month = st.session_state.get('weekend_month', dt_selected.month)
     m_month = st.session_state.get('monthly_month_zone_simple', dt_selected.month)
     m_year = st.session_state.get('monthly_year_zone_simple', dt_selected.year)
     edited_pivot = st.session_state.get('edited_pivot', get_monthly_pivot_df(m_year, m_month, ZONE)).copy()
 
+    st.caption('📝 Brouillon conservé automatiquement pendant la navigation — vos saisies restent disponibles avant la soumission.')
+
     if zone_menu == "🚨 Rapport du jour":
         st.markdown('<div class="section-title">🚨 1. CELLS DOWN — incidents réseau</div>', unsafe_allow_html=True)
         st.caption("Ajoutez une ligne uniquement pour un site impacté. Les colonnes 2G/3G/4G/5G servent à compter les cellules hors service.")
-        cells_editor_df = cells0.copy() if not cells0.empty else pd.DataFrame(columns=['SITE','2G','3G','4G','5G','OBSERVATION','STATUT'])
+        cells_editor_df = cells.copy() if not cells.empty else pd.DataFrame(columns=['SITE','2G','3G','4G','5G','OBSERVATION','STATUT'])
         if 'STATUT' in cells_editor_df.columns:
             cells_editor_df['STATUT'] = cells_editor_df['STATUT'].replace({'UP': '🟢 UP', 'DOWN': '🔴 DOWN'})
         cells = st.data_editor(
@@ -2193,48 +2147,59 @@ if ROLE == 'ZONE':
                 '4G': st.column_config.NumberColumn(min_value=0, step=1),
                 '5G': st.column_config.NumberColumn(min_value=0, step=1),
                 'STATUT': st.column_config.SelectboxColumn(options=STATUS_DISPLAY, required=False)
-            }, key='cells_editor'
+            }, key=f'cells_editor_{_draft_context_id}'
         )
         if 'STATUT' in cells.columns:
             cells['STATUT'] = cells['STATUT'].replace({'🟢 UP': 'UP', '🔴 DOWN': 'DOWN'})
         st.session_state['cells_data'] = cells.copy()
-        total = _safe_int(cells[['2G','3G','4G','5G']].apply(pd.to_numeric, errors='coerce').fillna(0).sum().sum()) if not cells.empty else 0
+        total = int(cells[['2G','3G','4G','5G']].fillna(0).sum().sum()) if not cells.empty else 0
 
         st.metric('TOTAL CELLS DOWN', total)
 
         st.markdown('<div class="section-title" style="margin-top:25px;">📌 2. DR2 J-1 — suivi des incidents</div>', unsafe_allow_html=True)
-        dr_editor_df = dr0.copy() if not dr0.empty else pd.DataFrame(columns=['SITE','SITES IMPACTÉS','DR2','ESCALADE','ÉVITABLE ?','POINT BLOQUANT','STATUT'])
+        dr_editor_df = dr.copy() if not dr.empty else pd.DataFrame(columns=['SITE','SITES IMPACTÉS','DR2','ESCALADE','ÉVITABLE ?','POINT BLOQUANT','STATUT'])
+        # Nettoyage des anciennes valeurs : « À confirmer » n'est plus proposé.
+        for _col in ['DR2', 'ÉVITABLE ?']:
+            if _col in dr_editor_df.columns:
+                dr_editor_df[_col] = dr_editor_df[_col].replace({'À confirmer': '', 'à confirmer': ''})
         if 'STATUT' in dr_editor_df.columns:
             dr_editor_df['STATUT'] = dr_editor_df['STATUT'].replace({'UP': '🟢 UP', 'DOWN': '🔴 DOWN'})
         dr = st.data_editor(
             dr_editor_df,
             num_rows='dynamic', use_container_width=True, hide_index=True,
             column_config={
-                'DR2': st.column_config.SelectboxColumn(options=YESNO, required=False),
-                'ESCALADE': st.column_config.TextColumn('ESCALADE', help='Saisie libre : indiquez l’escalade si nécessaire.'),
-                'ÉVITABLE ?': st.column_config.SelectboxColumn(options=YESNO, required=False),
+                # DR2 : uniquement OUI / NON
+                'DR2': st.column_config.SelectboxColumn(options=YESNO),
+                # ESCALADE : aucune liste déroulante, saisie libre
+                'ESCALADE': st.column_config.TextColumn(),
+                # ÉVITABLE ? : uniquement OUI / NON
+                'ÉVITABLE ?': st.column_config.SelectboxColumn(options=YESNO),
                 'STATUT': st.column_config.SelectboxColumn(options=STATUS_DISPLAY, required=False)
-            }, key='dr_editor'
+            }, key=f'dr_editor_{_draft_context_id}'
         )
         if 'STATUT' in dr.columns:
             dr['STATUT'] = dr['STATUT'].replace({'🟢 UP': 'UP', '🔴 DOWN': 'DOWN'})
-        if 'DR2' in dr.columns:
-            dr['DR2'] = dr['DR2'].map(lambda v: _clean_choice(v, YESNO, blank_legacy=True))
-        if 'ÉVITABLE ?' in dr.columns:
-            dr['ÉVITABLE ?'] = dr['ÉVITABLE ?'].map(lambda v: _clean_choice(v, YESNO, blank_legacy=True))
-        if 'ESCALADE' in dr.columns:
-            dr['ESCALADE'] = dr['ESCALADE'].map(lambda v: '' if str(v).strip() == 'À confirmer' else ('' if pd.isna(v) else str(v).strip()))
+        for _col in ['DR2', 'ÉVITABLE ?']:
+            if _col in dr.columns:
+                dr[_col] = dr[_col].replace({'À confirmer': '', 'à confirmer': ''})
         st.session_state['dr_data'] = dr.copy()
 
         st.markdown('<div class="section-title" style="margin-top:25px;">💬 3. DIFFICULTÉS — ce qui bloque le travail</div>', unsafe_allow_html=True)
-        difficulties = st.text_area('', diff or '', placeholder="Précisez les pannes d'énergie, coupures FH, blocages d'accès...", height=100, key='diff')
+        difficulties = st.text_area(
+            '',
+            value=difficulties or '',
+            placeholder="Précisez les pannes d'énergie, coupures FH, blocages d'accès...",
+            height=100,
+            key=f'diff_{_draft_context_id}'
+        )
+        st.session_state['diff_data'] = difficulties or ''
 
         st.markdown('<div class="section-title" style="margin-top:20px;">⚙️ 4. INSTANCES — suivi opérationnel</div>', unsafe_allow_html=True)
-        ins = st.data_editor(ins, num_rows='dynamic', use_container_width=True, hide_index=True, key='ins_editor')
+        ins = st.data_editor(ins, num_rows='dynamic', use_container_width=True, hide_index=True, key=f'ins_editor_{_draft_context_id}')
         st.session_state['ins_data'] = ins.copy()
 
         st.markdown('<div class="section-title" style="margin-top:20px;">📉 5. SITES DÉGRADÉS — qualité réseau</div>', unsafe_allow_html=True)
-        deg = st.data_editor(deg if not deg.empty else pd.DataFrame(columns=['SITE NAME','2G','3G','4G','DISPONIBILITÉ','BASE']), num_rows='dynamic', use_container_width=True, hide_index=True, key='deg_editor')
+        deg = st.data_editor(deg if not deg.empty else pd.DataFrame(columns=['SITE NAME','2G','3G','4G','DISPONIBILITÉ','BASE']), num_rows='dynamic', use_container_width=True, hide_index=True, key=f'deg_editor_{_draft_context_id}')
         st.session_state['deg_data'] = deg.copy()
 
         render_daily_synthesis(r, zone=ZONE)
@@ -2444,7 +2409,7 @@ if ROLE == 'ZONE':
         st.markdown('<div class="section-title">🧠 PARTAGE D\'EXPÉRIENCE & SESSIONS</div>', unsafe_allow_html=True)
 
         st.markdown('### 📝 Retour d’expérience / Formation')
-        forms = st.data_editor(forms, num_rows='dynamic', use_container_width=True, hide_index=True, key='forms_editor')
+        forms = st.data_editor(forms, num_rows='dynamic', use_container_width=True, hide_index=True, key=f'forms_editor_{_draft_context_id}')
         st.session_state['forms_data'] = forms.copy()
 
         st.markdown('### 📸🎥 Photos & vidéos du retour d’expérience')
@@ -2661,7 +2626,7 @@ if ROLE == 'ZONE':
 
         s1, s2, s3, s4 = st.columns(4)
         with s1:
-            st.metric("Cells Down", _safe_int(cells[['2G','3G','4G','5G']].apply(pd.to_numeric, errors='coerce').fillna(0).sum().sum()) if not cells.empty else 0)
+            st.metric("Cells Down", int(cells[['2G','3G','4G','5G']].fillna(0).sum().sum()) if not cells.empty else 0)
         with s2:
             st.metric("DR2", int((dr['DR2'].fillna('') == 'OUI').sum()) if not dr.empty else 0)
         with s3:
@@ -2708,6 +2673,7 @@ if ROLE == 'ZONE':
             except Exception as exc:
                 st.warning(f"Le rapport quotidien a été enregistré, mais le planning mensuel n'a pas pu être mis à jour : {exc}")
 
+            st.session_state['_draft_saved_context'] = _draft_context
             st.balloons()
             st.success(f'✅ Tout le rapport de la zone {ZONE} du {r} a été soumis en une seule fois !')
 
@@ -2734,7 +2700,7 @@ else:
 
     k1, k2, k3, k4 = st.columns(4)
     k1.metric('RAPPORTS TRANSMIS', f'{len(submitted)}/{len(ZONES)}')
-    k2.metric('TOTAL CELLS DOWN', _safe_int(cells[['2G','3G','4G','5G']].apply(pd.to_numeric, errors='coerce').fillna(0).sum().sum()) if not cells.empty else 0)
+    k2.metric('TOTAL CELLS DOWN', int(cells[['2G','3G','4G','5G']].fillna(0).sum().sum()) if not cells.empty else 0)
     k3.metric('INCIDENTS DR2', int((dr.DR2.fillna('') == 'OUI').sum()) if not dr.empty else 0)
     k4.metric('PERMANENCES WEEK-END', int(qdf('SELECT COUNT(*) c FROM weekend_permanence WHERE weekend_start LIKE ? AND zone IN ({})'.format(','.join(['?']*len(ZONES))), tuple([f'%/{dt_selected.month:02d}/{dt_selected.year}'] + ZONES)).iloc[0,0]) if ZONES else 0)
 
