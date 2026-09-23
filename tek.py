@@ -915,14 +915,17 @@ st.markdown("""
         display: none;
     }
 
-    /* Hamburger mobile : masqué par défaut sur PC. */
-    div[data-testid="stButton"]:has(button[aria-label="☰"]) {
+    /* Conteneur dédié au bouton hamburger : caché par défaut sur PC.
+       On utilise un conteneur Streamlit avec une clé dédiée afin de ne pas
+       dépendre de l'aria-label ou de la structure interne du bouton. */
+    .st-key-yas-mobile-hamburger {
         display: none !important;
     }
 
     /* Desktop : sidebar Streamlit normale, navigation PC inchangée. */
     @media (min-width: 701px) {
-        .yas-mobile-header, .yas-mobile-menu { display: none !important; }
+        .yas-mobile-header, .yas-mobile-menu,
+        .st-key-yas-mobile-hamburger { display: none !important; }
     }
 
     @media (max-width: 700px) {
@@ -960,10 +963,18 @@ st.markdown("""
             line-height: 1.1;
             text-transform: uppercase;
         }
-        div[data-testid="stButton"]:has(button[aria-label="☰"]) {
+        .st-key-yas-mobile-hamburger {
+            display: block !important;
+            position: relative !important;
+            height: 0 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            z-index: 1000000 !important;
+        }
+        .st-key-yas-mobile-hamburger div[data-testid="stButton"] {
             display: block !important;
         }
-        div[data-testid="stButton"] button[aria-label="☰"] {
+        .st-key-yas-mobile-hamburger button {
             position: fixed !important;
             top: 11px !important;
             right: 11px !important;
@@ -981,7 +992,7 @@ st.markdown("""
             z-index: 1000000 !important;
             font-size: 20px !important;
         }
-        div[data-testid="stButton"] button[aria-label="☰"] p {
+        .st-key-yas-mobile-hamburger button p {
             color: #FFCC00 !important;
             font-size: 20px !important;
             margin: 0 !important;
@@ -1652,9 +1663,10 @@ st.markdown(f'''
 </div>
 ''', unsafe_allow_html=True)
 
-if st.button("☰", key="yas_mobile_menu_button", help="Ouvrir / fermer le menu"):
-    st.session_state.yas_mobile_menu_open = not st.session_state.yas_mobile_menu_open
-    st.rerun()
+with st.container(key="yas-mobile-hamburger"):
+    if st.button("☰", key="yas_mobile_menu_button", help="Ouvrir / fermer le menu"):
+        st.session_state.yas_mobile_menu_open = not st.session_state.yas_mobile_menu_open
+        st.rerun()
 
 if st.session_state.yas_mobile_menu_open:
     if ROLE == "ZONE":
