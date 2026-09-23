@@ -915,6 +915,11 @@ st.markdown("""
         display: none;
     }
 
+    /* Desktop : sidebar Streamlit normale, navigation PC inchangée. */
+    @media (min-width: 701px) {
+        .yas-mobile-header, .yas-mobile-menu { display: none !important; }
+    }
+
     @media (max-width: 700px) {
         section[data-testid="stSidebar"] { display: none !important; }
         [data-testid="collapsedControl"] { display: none !important; }
@@ -949,19 +954,6 @@ st.markdown("""
             font-weight: 900;
             line-height: 1.1;
             text-transform: uppercase;
-        }
-        .yas-mobile-hamburger {
-            flex: 0 0 34px;
-            width: 34px;
-            height: 34px;
-            border-radius: 9px;
-            background: #0A1128;
-            color: #FFCC00;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 21px;
-            font-weight: 900;
         }
         div[data-testid="stButton"] button[aria-label="☰"] {
             position: fixed !important;
@@ -1630,15 +1622,25 @@ def load(r, z):
 if "yas_mobile_menu_open" not in st.session_state:
     st.session_state.yas_mobile_menu_open = False
 
+# True uniquement lorsqu'une rubrique a été choisie depuis le menu mobile.
+# Cela évite que le dernier choix mobile bloque la navigation de la sidebar sur PC.
+if "yas_mobile_nav_override" not in st.session_state:
+    st.session_state.yas_mobile_nav_override = False
+
 if "yas_mobile_choice" not in st.session_state:
     st.session_state.yas_mobile_choice = (
         "🚨 Rapport du jour" if ROLE == "ZONE" else "✨ Actualités opérationnelles"
     )
 
+def _desktop_zone_navigation_changed():
+    st.session_state.yas_mobile_nav_override = False
+
+def _desktop_supervisor_navigation_changed():
+    st.session_state.yas_mobile_nav_override = False
+
 st.markdown(f'''
 <div class="yas-mobile-header">
   {("<img class=\"yas-mobile-logo\" src=\"" + LOGO_SRC + "\" alt=\"YAS DFO-SRTM\">") if LOGO_SRC else "<div class=\"yas-mobile-logo-fallback\">📡 YAS DFO-SRTM<br>HUB OPÉRATIONNEL MARITIME</div>"}
-  <div class="yas-mobile-hamburger">☰</div>
 </div>
 ''', unsafe_allow_html=True)
 
@@ -1664,6 +1666,7 @@ if st.session_state.yas_mobile_menu_open:
     )
     if mobile_choice != st.session_state.yas_mobile_choice:
         st.session_state.yas_mobile_choice = mobile_choice
+        st.session_state.yas_mobile_nav_override = True
         st.session_state.yas_mobile_menu_open = False
         st.rerun()
     st.markdown('</div>', unsafe_allow_html=True)
@@ -2028,9 +2031,10 @@ if ROLE == 'ZONE':
         "Sous-menus",
         ["🚨 Rapport du jour", "🗓️ Planning", "🧠 Rex & Formations", "🚀 Vérifier & Soumettre"],
         key="zone_menu_desktop",
-        label_visibility="collapsed"
+        label_visibility="collapsed",
+        on_change=_desktop_zone_navigation_changed
     )
-    if st.session_state.get("yas_mobile_choice") in ["🚨 Rapport du jour", "🗓️ Planning", "🧠 Rex & Formations", "🚀 Vérifier & Soumettre"]:
+    if st.session_state.get("yas_mobile_nav_override") and st.session_state.get("yas_mobile_choice") in ["🚨 Rapport du jour", "🗓️ Planning", "🧠 Rex & Formations", "🚀 Vérifier & Soumettre"]:
         zone_menu = st.session_state.get("yas_mobile_choice", zone_menu)
     # Tableau de bord intégré directement dans le carré « ESPACE ZONE ».
     _zone_status, _zone_submitted_at = _report_status_for_zone(r, ZONE)
@@ -2651,9 +2655,10 @@ else:
         "Sous-menus",
         ["✨ Actualités opérationnelles", "📄 Problématiques", "📅 Week-ends", "🗓️ Planning secteurs"],
         key="sup_menu_desktop",
-        label_visibility="collapsed"
+        label_visibility="collapsed",
+        on_change=_desktop_supervisor_navigation_changed
     )
-    if st.session_state.get("yas_mobile_choice") in ["✨ Actualités opérationnelles", "📄 Problématiques", "📅 Week-ends", "🗓️ Planning secteurs"]:
+    if st.session_state.get("yas_mobile_nav_override") and st.session_state.get("yas_mobile_choice") in ["✨ Actualités opérationnelles", "📄 Problématiques", "📅 Week-ends", "🗓️ Planning secteurs"]:
         sup_menu = st.session_state.get("yas_mobile_choice", sup_menu)
     st.sidebar.markdown(f'''
     <div class="sidebar-user-card">
