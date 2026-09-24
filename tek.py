@@ -596,6 +596,30 @@ st.markdown("""
         box-shadow: 0 6px 20px rgba(255, 204, 0, 0.5) !important;
     }
 
+
+    /* ===== BOUTON DECONNEXION : TRES VISIBLE ===== */
+    .st-key-logout_container button {
+        background: linear-gradient(135deg, #FF4D4F 0%, #D9363E 100%) !important;
+        color: #FFFFFF !important;
+        border: 2px solid rgba(255,255,255,.28) !important;
+        border-radius: 12px !important;
+        min-height: 46px !important;
+        font-size: 13px !important;
+        font-weight: 900 !important;
+        letter-spacing: .6px !important;
+        box-shadow: 0 5px 16px rgba(217,54,62,.38) !important;
+        transition: all .18s ease !important;
+    }
+    .st-key-logout_container button:hover {
+        background: linear-gradient(135deg, #FF6B6D 0%, #E23B44 100%) !important;
+        border-color: #FFFFFF !important;
+        transform: translateY(-2px) !important;
+        box-shadow: 0 8px 22px rgba(255,77,79,.52) !important;
+    }
+    .st-key-logout_container button:active {
+        transform: translateY(0) !important;
+    }
+
     /* Légende */
     .legend-box {
         background: #132240;
@@ -1721,10 +1745,11 @@ with c_top1:
     dt_selected = st.date_input('📅 Date du rapport', date.today())
     r = dt_selected.strftime('%d/%m/%Y')
 with c_top2:
-    st.write("")
-    if st.button('🚪 Déconnexion', use_container_width=True): 
-        st.session_state.clear()
-        st.rerun()
+    with st.container(key="logout_container"):
+        st.write("")
+        if st.button('🚪  DÉCONNEXION', use_container_width=True):
+            st.session_state.clear()
+            st.rerun()
 
 st.write("")
 
